@@ -609,10 +609,10 @@
     </div>
     <input id="input" type="text" placeholder="Ask anything…" />
     <div class="model-wrap">
-      <button type="button" class="model-pill" id="modelPill" aria-haspopup="true" aria-expanded="false" title="Choose model"><span id="modelPillLabel">Claude</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button type="button" class="model-pill" id="modelPill" aria-haspopup="true" aria-expanded="false" title="Choose model"><span id="modelPillLabel">Local</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
       <div class="model-menu" id="modelMenu" role="menu">
-        <button type="button" class="model-opt active" role="menuitemradio" data-provider="anthropic"><span class="mo-text"><span class="mo-name">Claude</span><span class="mo-desc">Most capable. Web search, images, best for complex requests.</span></span><svg class="mo-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
-        <button type="button" class="model-opt" role="menuitemradio" data-provider="ollama"><span class="mo-text"><span class="mo-name" id="localName">Local</span><span class="mo-desc">Runs on this PC. Private and works offline, but slower and simpler.</span></span><svg class="mo-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+        <button type="button" class="model-opt" role="menuitemradio" data-provider="anthropic"><span class="mo-text"><span class="mo-name">Claude</span><span class="mo-desc">Most capable. Web search, images, best for complex requests.</span></span><svg class="mo-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+        <button type="button" class="model-opt active" role="menuitemradio" data-provider="ollama"><span class="mo-text"><span class="mo-name" id="localName">Local</span><span class="mo-desc">Runs on this PC. Private and works offline, but slower and simpler.</span></span><svg class="mo-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
       </div>
     </div>
     <button class="send" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -1316,6 +1316,25 @@ const REPLY_EMAIL_URL = 'http://localhost:8000/reply-email';
 const REPLY_TARGET_URL = 'http://localhost:8000/reply-target';
 const CALENDAR_EVENT_URL = 'http://localhost:8000/calendar-event';
 const MODEL_URL = 'http://localhost:8000/model';
+// Claude is switched off in the UI for now (CEO request, 2026-09-30): the app
+// runs on the local model only. The backend's Claude code and this file's model
+// picker are kept - set LOCAL_ONLY = false to bring the picker back.
+const LOCAL_ONLY = true;
+async function ensureLocalProvider() {
+  if (!LOCAL_ONLY) return;
+  try {
+    const cur = await (await fetch(MODEL_URL, { signal: AbortSignal.timeout(2000) })).json();
+    if (cur.provider !== 'ollama') {
+      await fetch(MODEL_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'ollama' })
+      });
+    }
+  } catch {
+    // Backend not reachable yet - checkBackend() calls this again on its next poll.
+  }
+}
 const STATUS_URL = 'http://localhost:8000/status';
 let SESSION_ID = 'ceo-session-1';  // replaced by "New chat" so the backend starts a fresh conversation
 let backendOnline = false;
@@ -1371,6 +1390,7 @@ async function checkBackend(refresh = false) {
     statusPollTimer = setTimeout(() => checkBackend(), 15000);
     return;
   }
+  await ensureLocalProvider();
   let ready = false;
   let detail = 'Checking…';
   let hint = '';
@@ -1403,6 +1423,7 @@ async function initModelToggle() {
   const menu = document.getElementById('modelMenu');
   if (!pill || !menu) return;
   const label = document.getElementById('modelPillLabel');
+  if (LOCAL_ONLY) document.querySelector('.model-wrap').style.display = 'none';
   const options = Array.from(menu.querySelectorAll('.model-opt'));
   const shortName = (provider) => provider === 'ollama' ? 'Local' : 'Claude';
   const setActive = (provider) => {
@@ -1424,7 +1445,7 @@ async function initModelToggle() {
     if (data.ollama_model) {
       document.getElementById('localName').textContent = 'Local \u00b7 ' + data.ollama_model;
     }
-    if (data.provider) setActive(data.provider);
+    if (data.provider) setActive(LOCAL_ONLY ? 'ollama' : data.provider);
   } catch {
     // Backend not up yet - keep the default; checkBackend()'s retry loop
     // sorts out the real status.

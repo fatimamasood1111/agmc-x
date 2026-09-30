@@ -2803,3 +2803,10 @@ win here — expect to still need a clean date from the CEO sometimes.
   `collapsePanel()` is shared by both. Click-outside/blur-to-collapse was
   deliberately NOT added (it would hide the widget whenever he clicks into
   Outlook to copy something) — ask before adding.
+- **Claude switched off in the UI (2026-09-30, CEO ask)**: `LOCAL_ONLY = true`
+  in `frontend/agmc-assistant-popup.html` hides the model picker and makes the
+  page force the backend to Ollama (`ensureLocalProvider()`, called at the top
+  of each `checkBackend()` poll, so it also covers a backend that starts later).
+  All backend Claude code and the picker markup/JS are untouched — set
+  `LOCAL_ONLY = false` to bring the picker back. The backend's own default
+  provider is still `anthropic` until a page connects. Not rebuilt into the installer.
