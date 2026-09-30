@@ -513,6 +513,40 @@
   .palette.has-chat .actions::-webkit-scrollbar { display: none; }
   .palette.has-chat .chip { flex: none; white-space: nowrap; padding: 7px 13px; }
 
+  /* Chat history: a full-panel view that replaces thread/chips/input while open. */
+  .history { display: none; flex-direction: column; }
+  .palette.history-open .thread, .palette.history-open .actions, .palette.history-open .inputrow { display: none !important; }
+  .palette.history-open .history { display: flex; }
+  .app-mode .history { flex: 1 1 auto; min-height: 0; }
+  .history-head { display: flex; align-items: center; gap: 8px; padding: 14px 14px 6px; }
+  .history-head h2 { font-size: 15px; font-weight: 600; color: var(--text); margin: 0; }
+  .history-back {
+    width: 28px; height: 28px; border-radius: 8px; border: none; background: transparent; cursor: pointer;
+    color: var(--text-secondary); display: flex; align-items: center; justify-content: center;
+  }
+  .history-back:hover { background: var(--surface-2); color: var(--text); }
+  .history-back svg { width: 16px; height: 16px; }
+  .history-list { overflow-y: auto; padding: 4px 10px 8px; max-height: 430px; }
+  .app-mode .history-list { flex: 1 1 auto; max-height: none; }
+  .hist-item { display: flex; align-items: center; border-radius: 10px; }
+  .hist-item:hover { background: var(--surface-2); }
+  .hist-item.current { background: var(--accent-bg); }
+  .hist-main { flex: 1; min-width: 0; border: none; background: transparent; text-align: left; padding: 9px 10px; cursor: pointer; font-family: inherit; }
+  .hist-title { display: block; font-size: 13.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-meta { display: block; font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .hist-del {
+    flex: none; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-family: inherit;
+    font-size: 12px; padding: 6px 9px; margin-right: 4px; border-radius: 7px; opacity: 0;
+  }
+  .hist-item:hover .hist-del, .hist-del.confirm, .hist-del:focus-visible { opacity: 1; }
+  .hist-del:hover { color: var(--danger); }
+  .hist-del.confirm { color: var(--danger); font-weight: 600; }
+  .history-empty { text-align: center; color: var(--text-secondary); font-size: 13px; padding: 36px 18px; line-height: 1.5; }
+  .history-foot { padding: 4px 18px 14px; text-align: center; }
+  .history-clear { border: none; background: transparent; color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: inherit; }
+  .history-clear:hover, .history-clear.confirm { color: var(--danger); }
+  .palette:not(.has-chat) #historyBtn { order: 99; grid-column: 1 / -1; justify-content: center; }
+
   /* Live progress while a reply is being worked on. */
   .progress { display: flex; flex-direction: column; gap: 7px; min-width: 190px; }
   .p-step { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); }
@@ -587,8 +621,17 @@
       <div class="welcome-sub">Ask about your inbox, calendar, travel or the web — or pick a shortcut below.</div>
     </div>
   </div>
+  <div class="history" id="history">
+    <div class="history-head">
+      <button type="button" class="history-back" id="historyBack" aria-label="Back to chat" title="Back (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <h2>Previous chats</h2>
+    </div>
+    <div class="history-list" id="historyList"></div>
+    <div class="history-foot"><button type="button" class="history-clear" id="historyClear" hidden>Clear all history</button></div>
+  </div>
   <div class="actions">
     <button class="chip chip-new" id="newChatBtn" type="button" title="Start a fresh conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>New chat</button>
+    <button class="chip" id="historyBtn" type="button" title="Previous chats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
     <button class="chip" data-q="Summarize my inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Summarize inbox</button>
     <button class="chip" data-fill="Schedule a meeting with "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Schedule a meeting</button>
     <button class="chip" data-fill="Find a flight from Dubai to "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 13l7-1 5-8 2 1-3 8 6 1v2l-6 1 3 8-2 1-5-8-7-1z"/></svg>Book a flight</button>
@@ -698,6 +741,7 @@ closeBtn.addEventListener('click', collapsePanel);
 // closes that menu first — see the model picker's own Esc handler).
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' || !palette.classList.contains('open')) return;
+  if (palette.classList.contains('history-open')) { closeHistory(); return; }
   const menuOpen = document.querySelector('.plus-menu.open, .model-menu.open');
   if (!menuOpen) collapsePanel();
 });
@@ -791,6 +835,112 @@ document.getElementById('newChatBtn').addEventListener('click', () => {
   setGreeting();
   input.value = '';
   input.focus();
+});
+
+// ---- Chat history (2026-09-30) ----------------------------------------------
+// Conversations are saved by the backend (history_store.py) after every
+// completed reply. Opening one restores what was said — read-only: proposal
+// cards are not restored, so an old "Send email" card can never be clicked.
+const HISTORY_URL = 'http://localhost:8000/history';
+const historyList = document.getElementById('historyList');
+const historyClear = document.getElementById('historyClear');
+
+function fmtWhen(ts) {
+  const d = new Date(ts * 1000), now = new Date();
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const day0 = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((day0(now) - day0(d)) / 86400000);
+  if (days === 0) return 'Today, ' + time;
+  if (days === 1) return 'Yesterday, ' + time;
+  return d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ', ' + time;
+}
+function historyNote(text) {
+  historyList.replaceChildren();
+  const p = document.createElement('div');
+  p.className = 'history-empty';
+  p.textContent = text;
+  historyList.appendChild(p);
+  historyClear.hidden = true;
+}
+function closeHistory() {
+  palette.classList.remove('history-open');
+  input.focus();
+}
+async function openHistory() {
+  if (sendBtn.disabled) return;  // never mid-reply
+  palette.classList.add('history-open');
+  historyNote('Loading…');
+  try {
+    const res = await fetch(HISTORY_URL, { signal: AbortSignal.timeout(4000) });
+    renderHistory((await res.json()).conversations || []);
+  } catch {
+    historyNote('History is available once the assistant is connected.');
+  }
+}
+// Two-step buttons: the first click asks, the second one does it.
+function twoStep(btn, askText, idleText, action) {
+  let timer = null;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (btn.classList.contains('confirm')) { clearTimeout(timer); action(); return; }
+    btn.classList.add('confirm');
+    btn.textContent = askText;
+    timer = setTimeout(() => { btn.classList.remove('confirm'); btn.textContent = idleText; }, 3500);
+  });
+}
+function renderHistory(list) {
+  historyList.replaceChildren();
+  if (!list.length) { historyNote('No previous chats yet. Your conversations will appear here.'); return; }
+  historyClear.hidden = false;
+  for (const c of list) {
+    const row = document.createElement('div');
+    row.className = 'hist-item' + (c.id === SESSION_ID ? ' current' : '');
+    const main = document.createElement('button');
+    main.type = 'button';
+    main.className = 'hist-main';
+    const title = document.createElement('span');
+    title.className = 'hist-title';
+    title.textContent = c.title;  // textContent only: titles come from what was typed
+    const meta = document.createElement('span');
+    meta.className = 'hist-meta';
+    meta.textContent = fmtWhen(c.updated) + ' · ' + Math.ceil(c.count / 2) + (c.count <= 2 ? ' message' : ' messages');
+    main.append(title, meta);
+    main.addEventListener('click', () => openConversation(c.id));
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'hist-del';
+    del.textContent = 'Delete';
+    del.setAttribute('aria-label', 'Delete this chat');
+    twoStep(del, 'Sure?', 'Delete', async () => {
+      try { await fetch(HISTORY_URL + '/' + encodeURIComponent(c.id), { method: 'DELETE' }); } catch { return; }
+      row.remove();
+      if (!historyList.querySelector('.hist-item')) historyNote('No previous chats yet. Your conversations will appear here.');
+    });
+    row.append(main, del);
+    historyList.appendChild(row);
+  }
+}
+async function openConversation(id) {
+  try {
+    const res = await fetch(HISTORY_URL + '/' + encodeURIComponent(id), { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) throw new Error('missing');
+    const conv = await res.json();
+    thread.replaceChildren(welcomeEl);
+    for (const m of conv.messages) addMsg(m.text, m.role === 'user' ? 'user' : 'assist');
+    SESSION_ID = id;  // the backend rebuilds this chat's context from disk on the next message
+    closeHistory();
+    thread.scrollTop = thread.scrollHeight;
+  } catch {
+    historyNote('That chat could not be opened.');
+  }
+}
+document.getElementById('historyBtn').addEventListener('click', openHistory);
+document.getElementById('historyBack').addEventListener('click', closeHistory);
+twoStep(historyClear, 'Clear everything?', 'Clear all history', async () => {
+  try { await fetch(HISTORY_URL, { method: 'DELETE' }); } catch { return; }
+  historyClear.classList.remove('confirm');
+  historyClear.textContent = 'Clear all history';
+  historyNote('No previous chats yet. Your conversations will appear here.');
 });
 
 const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>';
@@ -1336,7 +1486,7 @@ async function ensureLocalProvider() {
   }
 }
 const STATUS_URL = 'http://localhost:8000/status';
-let SESSION_ID = 'ceo-session-1';  // replaced by "New chat" so the backend starts a fresh conversation
+let SESSION_ID = 'ceo-session-' + Date.now();  // replaced by "New chat" so the backend starts a fresh conversation
 let backendOnline = false;
 
 // Maps orchestrator.TOOLS' real tool names (see orchestrator.py) to a

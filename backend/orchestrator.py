@@ -589,6 +589,29 @@ _known_itineraries: dict[str, dict[str, dict]] = {}
 _known_emails: dict[str, dict[str, dict]] = {}
 
 
+MAX_HYDRATED_MESSAGES = 12
+
+
+def hydrate_session(session_id: str, messages: list[dict]) -> None:
+    """Rebuild a session's model context from a stored conversation (chat
+    history, opened again after a restart). Plain text only: the tool results
+    of that old chat are gone, so the model continues from what was SAID.
+    Roles must alternate starting with the user."""
+    if _sessions.get(session_id):
+        return
+    turns: list[dict] = []
+    for m in messages[-MAX_HYDRATED_MESSAGES:]:
+        role = "user" if m.get("role") == "user" else "assistant"
+        text = (m.get("text") or "").strip()
+        if not text or (not turns and role != "user") or (turns and turns[-1]["role"] == role):
+            continue
+        turns.append({"role": role, "content": [{"type": "text", "text": text}]})
+    if turns and turns[-1]["role"] == "user":
+        turns.pop()  # keep the pairs whole
+    if turns:
+        _sessions[session_id] = turns
+
+
 def _lock_for(session_id: str) -> threading.Lock:
     return _locks.setdefault(session_id, threading.Lock())
 

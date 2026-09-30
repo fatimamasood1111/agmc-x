@@ -2851,3 +2851,45 @@ it, the model is not called at all.
   messages, flights still reaching the model), and the real backend on a
   throwaway port with the real Outlook (read-only; nothing was booked).
 - **NOT rebuilt into the installer / not pushed to GitHub.**
+
+### Chat history (2026-09-30, CEO ask: "only if possible")
+
+- **Storage** (`backend/history_store.py`): one JSON file per conversation in
+  `%APPDATA%\AGMC X\history` (`AGMC_DATA_DIR` overrides). Only the VISIBLE
+  transcript is kept (what he typed + what the assistant answered), saved by
+  `/chat/stream` after each COMPLETED reply (a failed turn is not saved, so roles
+  always alternate). Capped at 200 chats. Plain text on his own profile, like his
+  Outlook cache; Delete / "Clear all history" remove the files for real.
+- **Proposal cards are stripped when saving** (```agmc-*``` blocks become a
+  "card not restored" note) and history renders as plain read-only messages, so an
+  old "Send email"/"Book meeting" card can never be clicked days later.
+- **Resuming**: opening a chat sets `SESSION_ID` to its id; if the backend has no
+  in-memory session for it, `chat_stream` calls `orchestrator.hydrate_session`
+  (last 12 messages, plain text, strictly alternating, ends on an assistant turn).
+  The old chat's tool results are gone, so the model continues from what was SAID
+  (e.g. `reply_ids` from an old inbox read are not restored — re-read the inbox).
+- **History routes** (`GET /history`, `GET|DELETE /history/{id}`, `DELETE /history`)
+  refuse any request whose `Origin` is not absent / `null` (file://) / localhost
+  (`_local_origin_only`) — CORS is wide open, and without this any web page he
+  visits could read his conversations from his browser. Ids are validated
+  (`^[A-Za-z0-9_-]{1,80}$`) because they become file names. **The rest of the API
+  is still wide-open CORS** — restricting it is still recommended.
+- **UI**: a History chip (after New chat; full-width at the bottom of the welcome
+  grid) opens a full-panel list (title, "Today, 3:41 PM · 2 messages", two-step
+  Delete, two-step "Clear all history"); click opens the chat; Esc closes History
+  before it collapses the panel. Titles are set with `textContent`.
+- **Behaviour change**: every launch of the page now gets its own session id
+  (was the fixed `ceo-session-1`, which silently kept hidden backend context after a
+  page reload that the UI didn't show).
+- Verified: backend tests on a scratch data folder (save, failed turn not saved,
+  proposal stripped, resume after simulated restart, bad ids, foreign-origin 403,
+  delete, cap, clear), and the UI in the browser pane against a scratch backend.
+  **Not rebuilt into the installer / not pushed.**
+
+### Teams messages — NOT built (needs IT), see chat 2026-09-30
+Reading/replying to Teams chats needs Microsoft Graph delegated `Chat.Read` +
+`ChatMessage.Send` (normally user-consentable, but AGMC's tenant blocks user
+consent entirely, as with Mail.Read). Outlook COM cannot see Teams chats and the
+Teams desktop app has no automation API. Plan when approved: same pattern as
+email (read + summarize fast path, reply via an approval card, chat ids validated
+against a server-side "known chats" map).

@@ -8,12 +8,14 @@ Run with: uvicorn main:app --reload --port 8000
 """
 import json
 import os
+import re
 import tempfile
 import traceback
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+import history_store
 import orchestrator
 from config import config
 from tools import file_tool, flight_tool, email_tool, calendar_tool, outlook_com_tool
@@ -63,14 +65,24 @@ def chat_stream(req: ChatRequest):
         # completion points (end of the try, end of the except) instead:
         # a genuine GeneratorExit now propagates straight through with no
         # further yield, exactly what the protocol requires.
+        texts: list[str] = []
         try:
+            if req.session_id not in orchestrator._sessions:
+                stored = history_store.load(req.session_id)  # a past chat opened from History
+                if stored:
+                    orchestrator.hydrate_session(req.session_id, stored.get("messages", []))
             for event in orchestrator.run_stream(req.session_id, req.message):
                 if event["type"] == "text":
+                    texts.append(event["text"])
                     yield f"data: {json.dumps({'text': event['text']})}\n\n"
                 elif event["type"] == "inbox":
                     yield f"data: {json.dumps({'inbox': event['data']})}\n\n"
                 else:
                     yield f"data: {json.dumps({'status': event['tool']})}\n\n"
+            try:  # only a COMPLETED exchange is saved; history must never break a chat
+                history_store.append_turn(req.session_id, req.message, "".join(texts))
+            except Exception:
+                traceback.print_exc()
             yield "data: [DONE]\n\n"
         except Exception as e:
             # Print the real traceback server-side — without this, a
@@ -314,6 +326,40 @@ def calendar_event(req: CalendarEventRequest):
         except Exception as e2:
             return {"ok": False, "error": f"Both creation paths failed — COM: {e}; Graph: {e2}"}
     return {"ok": True, **result}
+
+
+def _local_origin_only(request: Request) -> None:
+    """History holds the CEO's conversations, and CORS above is wide open, so
+    any web page he visits could otherwise read http://localhost:8000/history
+    from his browser. Only the app itself (no Origin header, file:// = "null",
+    or a localhost page) may."""
+    origin = request.headers.get("origin")
+    if origin and origin != "null" and not re.match(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", origin):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+
+@app.get("/history", dependencies=[Depends(_local_origin_only)])
+def history_list():
+    return {"conversations": history_store.list_conversations()}
+
+
+@app.get("/history/{session_id}", dependencies=[Depends(_local_origin_only)])
+def history_get(session_id: str):
+    conv = history_store.load(session_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return conv
+
+
+@app.delete("/history/{session_id}", dependencies=[Depends(_local_origin_only)])
+def history_delete(session_id: str):
+    orchestrator._sessions.pop(session_id, None)
+    return {"deleted": history_store.delete(session_id)}
+
+
+@app.delete("/history", dependencies=[Depends(_local_origin_only)])
+def history_clear():
+    return {"deleted": history_store.clear_all()}
 
 
 class ModelRequest(BaseModel):
