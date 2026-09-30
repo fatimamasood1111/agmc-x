@@ -1,0 +1,27 @@
+fastapi>=0.115
+uvicorn>=0.30
+anthropic>=0.40
+python-dotenv>=1.0
+msal>=1.31
+requests>=2.32
+pydantic>=2.10
+pypdf>=5.0
+python-docx>=1.1
+openpyxl>=3.1
+python-multipart>=0.0.9
+# Pillow: re-added 2026-09-24 as a REAL runtime dependency, not the same
+# thing as the earlier one-time icon-generation use that got removed
+# during the Electron cleanup — needed by pypdf to decode embedded PDF
+# images (page.images) so they can be re-encoded as clean JPEGs and sent
+# to Claude as real vision input, not just extracted text.
+pillow>=11.0
+# mcp: added 2026-09-25 for the Outlook MCP server (mcp_servers/outlook_server.py)
+# and its client (mcp_outlook_client.py) — a real MCP server/client pair, not
+# a plain function call. See CLAUDE.md for why (a direct boss request for
+# "an MCP" specifically) and the Azure Portal setup this still needs.
+mcp[cli]>=2.2.0
+# ollama: added 2026-09-28 for the runtime Claude<->local-model switch
+# (llm_providers.py, orchestrator.set_provider). Talks to a separately
+# installed/running `ollama serve` daemon on localhost:11434 — this pip
+# package is just the API client, not the model runtime itself.
+ollama>=0.4

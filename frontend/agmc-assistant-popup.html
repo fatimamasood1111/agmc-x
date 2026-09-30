@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AGMC X</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Brand swap 2026-09-25 (CEO-provided): #153804 dark green +
+       #f1ede9 beige. Faithful swap, not a full rebrand — --accent keeps
+       its existing SUPPORTING role (mascot icon, header mark, subtle
+       highlights); the send button and the CEO's own chat bubbles still
+       use --text/--bg (near-black/cream), unchanged, per the agreed
+       "faithful swap" direction over a bolder full-rebrand option.
+       --success is deliberately NOT this same green — it was already a
+       distinct enough shade (more teal-leaning) before this change, and
+       stays that way on purpose so "Connected"/success states don't lose
+       their signal value now that green is also the brand color.
+       --surface (panel/dropdown/approval-card background) changed from
+       white to match --bg exactly, per direct CEO follow-up — white
+       looked disconnected from the new beige page background, and it
+       also left --surface-2 (assistant bubble background, #F7F4EE)
+       nearly indistinguishable from an all-white panel. Now bubbles
+       read as a lighter tone floating on a beige panel, actual contrast
+       instead of white-on-white. */
+    --bg: #F1EDE9;
+    --surface: #F1EDE9;
+    --surface-2: #F7F4EE;
+    --border: rgba(27,27,29,0.10);
+    --border-strong: rgba(27,27,29,0.18);
+    --text: #1B1B1D;
+    --text-secondary: #6B6D72;
+    --text-muted: #9A9C9F;
+    --accent: #153804;
+    --accent-bg: #E4E9DF;
+    --accent-text: #153804;
+    /* NOT the same job as --accent-text, despite the similar name —
+       found 2026-09-25 while checking dark mode: --accent-text is for a
+       dark icon/text sitting on the PALE --accent-bg tint (the header
+       mark icon), which is why it's dark. The mascot's own eyes/smile
+       are drawn directly ON TOP OF --accent itself (a SOLID dark green
+       fill), which needs the OPPOSITE — a light color — or they're
+       literally invisible (same color as the circle under them, zero
+       contrast, not just low contrast — confirmed via computed styles
+       returning identical rgb values for both). White works against
+       --accent in both light mode (#153804, very dark) and dark mode
+       (#57A230, medium) without needing a separate per-theme value —
+       defined once here and left alone in the dark blocks below on
+       purpose, same pattern as --header-bg/--status-ok. */
+    --accent-fg: #FFFFFF;
+    --danger: #A3402D;
+    --danger-bg: #F6E4DF;
+    --success: #3D6B45;
+    --success-bg: #E4EFE3;
+    --shadow: 0 20px 50px rgba(20,18,12,0.18), 0 2px 8px rgba(20,18,12,0.08);
+    /* Added 2026-09-25, direct CEO follow-up on the brand swap above.
+       These four are deliberately theme-INVARIANT (defined once here,
+       never overridden in the dark-mode blocks below, so they stay
+       constant in both themes) — the header is meant to be a fixed brand
+       ribbon, not something that flips look between light/dark mode.
+       --status-ok is a brighter green than --accent on purpose: the
+       header background IS --accent (#153804), and the same dark green
+       used for both header bg and a "connected" dot would barely be
+       legible against itself — this is the same brightened green already
+       used for --accent in dark mode elsewhere, reused here because the
+       reason (dark green needs lifting to read against a dark backdrop)
+       is identical. --success itself is untouched and still used as-is
+       for approval-card outcomes elsewhere, which sit on light surfaces
+       and don't have this problem. */
+    --header-bg: #153804;
+    --header-fg: #FFFFFF;
+    --header-fg-muted: rgba(255,255,255,0.72);
+    --status-ok: #57A230;
+    --status-warn: #E8B23A;
+    /* Chips/+-button/its dropdown menu need their OWN background now
+       that --surface matches --bg exactly (added above) — otherwise they
+       have no contrast against the panel at all. White in light mode;
+       kept at the same shade dark mode's --surface already used, since
+       dark mode already had natural contrast here and wasn't part of
+       this request. */
+    --chip-bg: #FFFFFF;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      /* #153804 is too dark to read against an already-dark background —
+         same problem the old gold accent solved by brightening for dark
+         mode (#8A6A2F -> #C9A65C). Brightened here the same way, keeping
+         the same hue family (a yellow-olive green) rather than reaching
+         for a generic/unrelated green, so dark mode still reads as the
+         same brand. --bg/--surface/--surface-2 get a subtle green tint
+         too (barely perceptible) instead of staying neutral charcoal, for
+         the same "still feels on-brand" reason. */
+      --bg: #10160D; --surface: #191F16; --surface-2: #1E251B;
+      --border: rgba(237,237,238,0.09); --border-strong: rgba(237,237,238,0.16);
+      --text: #EDEDEE; --text-secondary: #A2A4AA; --text-muted: #6E7078;
+      --accent: #57A230; --accent-bg: rgba(87,162,48,0.14); --accent-text: #78CC4E;
+      --danger: #E0796A; --danger-bg: rgba(224,121,106,0.14);
+      --success: #7FBB86; --success-bg: rgba(127,187,134,0.14);
+      --shadow: 0 20px 50px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+      --chip-bg: #191F16;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10160D; --surface: #191F16; --surface-2: #1E251B;
+    --chip-bg: #191F16;
+    --border: rgba(237,237,238,0.09); --border-strong: rgba(237,237,238,0.16);
+    --text: #EDEDEE; --text-secondary: #A2A4AA; --text-muted: #6E7078;
+    --accent: #57A230; --accent-bg: rgba(87,162,48,0.14); --accent-text: #78CC4E;
+    --danger: #E0796A; --danger-bg: rgba(224,121,106,0.14);
+    --success: #7FBB86; --success-bg: rgba(127,187,134,0.14);
+    --shadow: 0 20px 50px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+    min-height: 100%;
+  }
+  .note {
+    text-align: center; font-size: 13px; color: var(--text-muted); padding: 28px 20px 0;
+  }
+
+  .mascot {
+    position: fixed; right: 24px; bottom: 24px;
+    right: calc(24px + env(safe-area-inset-right, 0px));
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    width: 56px; height: 56px; border-radius: 50%; background: var(--accent);
+    border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow); z-index: 10;
+    /* padding:0 added 2026-09-25 alongside the logo-image mascot swap —
+       a plain <button> has non-zero default UA padding (Chrome: ~1px 6px)
+       that was always there but invisible while the mascot's content was
+       a small fixed-size SVG just centered inside it. The new logo <img>
+       needs to fill 100% of this box exactly (object-fit:cover, clipped
+       to a circle), and percentage sizing on a flex child resolves
+       against the CONTENT box, so that latent default padding shrank the
+       image a few px short of the circle's true edge, leaving a thin
+       unfilled ring. If a future change swaps the mascot's content again,
+       don't drop this — verify via computed getBoundingClientRect(), not
+       a screenshot (this project's own history already found automated
+       screenshots of this specific tiny transparent widget unreliable). */
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .mascot { animation: bob 2.6s ease-in-out infinite; }
+    .mascot::before { animation: pulse 2.4s ease-out infinite; }
+
+  }
+  .mascot::before {
+    content: ''; position: absolute; inset: -6px; border-radius: 50%;
+    background: var(--accent); opacity: 0; z-index: -1;
+  }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes pulse { 0% { transform: scale(1); opacity: 0.45; } 100% { transform: scale(1.7); opacity: 0; } }
+
+  .badge {
+    /* Hidden by default — found 2026-09-24: it used to show on every
+       fresh page load with nothing behind it, a permanently-on decoration
+       rather than a real notification. Now only shown by JS when a reply
+       actually finishes arriving while the panel is closed (see send()'s
+       completion handling below), and hidden again the moment the panel
+       is opened. */
+    display: none;
+    position: absolute; top: -2px; right: -2px; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--danger); border: 2px solid var(--bg);
+  }
+
+  .palette {
+    position: fixed; right: 24px; bottom: 92px; width: 380px; max-width: calc(100vw - 48px);
+    right: calc(24px + env(safe-area-inset-right, 0px));
+    background: var(--surface); border: 0.5px solid var(--border-strong);
+    border-radius: 16px; box-shadow: var(--shadow); overflow: hidden;
+    display: none; z-index: 9;
+  }
+  .palette.open {
+    display: block; opacity: 0; transform: translateY(10px) scale(0.97);
+    animation: summon 0.28s cubic-bezier(0.2,0.7,0.3,1) forwards;
+  }
+  @media (prefers-reduced-motion: reduce) { .palette.open { animation: none; opacity: 1; transform: none; } }
+  @keyframes summon { to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  /* Desktop-app mode (desktop/main.js — Electron — opens this file with
+     #app=1). An earlier pywebview-based shell (desktop_app.py, removed)
+     hit real, never-fully-resolved problems here: its transparent= flag
+     rendered a solid square regardless, a manual Win32 color-key hack
+     ALSO rendered a solid square (WebView2 composites via its own surface
+     that bypasses that mechanism entirely), and even Form.Region shape-
+     clipping — which did work — sat on top of window sizing that proved
+     inconsistent run to run no matter what was tried (DPI-awareness
+     fixes, explicit min_size, raw SetWindowPos, a self-correcting
+     measure-and-retry loop). Electron's BrowserWindow transparency and
+     exact sizing are both just reliable, out of the box — this is one of
+     Electron's best-trodden use cases (chat bubbles/overlay widgets).
+     Because desktop/main.js sizes the real OS window to EXACTLY match
+     the current state (bubble or panel), .mascot/.palette need to fill
+     that window edge-to-edge here, not sit at a webpage-style offset
+     (right:24px etc.) meant for a much bigger canvas — hence the
+     position overrides below. If sizing/shape ever looks wrong again,
+     check for a mismatch between these dimensions and main.js's
+     BUBBLE_SIZE/PANEL_W/PANEL_H/PANEL_RADIUS constants first. */
+  .app-mode .mascot {
+    /* Literal 72px, matching main.js's BUBBLE_SIZE, not width/height:100%
+       — testing 2026-09-24 whether percentage sizing against the window's
+       content box is what's producing a non-circular first paint (the
+       captured window bitmap itself is a verified-exact 72x72 square, so
+       whatever's producing the oval is inside this element's own CSS
+       resolution, not the window). If this fixes it, the container's
+       reported 100% width/height isn't trustworthy on the very first
+       layout pass in this environment; if it DOESN'T fix it, revert this
+       and look at the SVG/eyes/badge children next, not window bounds
+       again — already ruled out four times. */
+    /* position:relative, NOT static — found 2026-09-24, this was the
+       actual root cause of the cold-launch shape bug, nothing to do with
+       window bounds or percentage sizing (both already ruled out). .badge
+       (a child of .mascot) is `position:absolute; top:-2px; right:-2px`,
+       which only means "2px outside THIS BUTTON's corner" if .mascot is
+       itself a positioned element — with position:static, that
+       containing-block relationship breaks, and .badge instead positions
+       against the viewport/window, landing 2px outside the window's own
+       top-right corner. That's real page overflow, which is exactly what
+       makes Chromium show a native scrollbar — confirmed via a real
+       screenshot showing actual scrollbar arrows/thumb squeezed into the
+       72x72 window, cropping the circle down to its top-left arc. Also
+       explains why one real click permanently fixed it: mascotBtn's click
+       handler sets badge.style.display='none' (to hide the notification
+       dot) and nothing ever resets it — the first click removes the
+       overflowing element from layout for good, so the bug never
+       recurred after that. position:relative keeps the same static-like
+       layout behavior (no visible offset, since no top/left is set here)
+       while correctly re-establishing .mascot as .badge's containing
+       block. */
+    /* Restored to 56px (matching the base rule's own size) 2026-09-25 —
+       the literal 72px here was a leftover from shape-bug debugging
+       attempt 5 above ("switched to a literal 72px... also did not fix
+       it"), never reverted once the REAL fix (position:relative on this
+       same rule) was confirmed. It also silently contradicted main.js's
+       own BUBBLE_SIZE comment ("tight around the 56px mascot circle + a
+       little breathing room") — a 56px circle in the 72px window is
+       exactly that original intent, an 8px margin on every side, not a
+       circle stretched edge-to-edge. Restoring it is what makes the bob
+       animation below possible again: a translateY bob had nowhere to
+       move into with zero margin (any upward motion clipped instantly
+       against the window's own physical top edge, which is a hard
+       boundary, not a scrollable/expandable canvas). */
+    position: relative; width: 56px; height: 56px; inset: auto;
+    box-shadow: none; /* --shadow's blur/spread (20px+) is far bigger than the 8px margin above and would still clip harshly right at the window edge — this stays disabled regardless of the animation fix */
+  }
+  .app-mode .mascot::before { display: none; } /* pulse glow ring stays off — its 6px inset + scale-to-1.7 animation would still clip against the window edge even with the 56px/8px-margin restore above; only the bob motion was asked for */
+  .app-mode .palette {
+    position: static; width: 100%; height: 100%; max-width: 100%;
+    right: auto; bottom: auto; box-shadow: none;
+    /* .palette's base `border: 0.5px solid var(--border-strong)` (above)
+       is meant to separate the panel from a white webpage background in
+       the embedded-widget case — added 2026-09-25, found via a real
+       screenshot against a dark desktop wallpaper: that same translucent
+       border sits right at the transparent window's own edge here, and
+       reads as a visible light outline around the solid green header
+       instead of a subtle separation line, since there's no white page
+       behind it to blend into. Dropped entirely in app-mode so the header
+       is a clean, fully-filled green box with no ring around it. */
+    border: none;
+  }
+  /* body's own opaque `background: var(--bg)` (above) paints the entire
+     window rectangle regardless of Electron's real transparent:true — that
+     opaque square is what showed through as a square around the round
+     bubble, and as visible corners around .palette's own border-radius
+     when the panel is open (both reported 2026-09-24). Transparent body is
+     what lets the round mascot/palette shapes actually be the window's
+     visible silhouette instead of sitting on top of a solid square. */
+  .app-mode, .app-mode body { background: transparent; }
+  /* Added 2026-09-25 alongside restoring .mascot to 56px (see above) —
+     with the button smaller than the window again, plain document flow
+     would just plant it at body's top-left corner instead of centered in
+     the 72x72 window. Safe with the expanded/panel state too: .palette.open
+     is forced to width/height:100% in app-mode (below), so centering a
+     flex item that already fills its container is a no-op there — this
+     only visibly does anything for the collapsed bubble state. mascotBtn
+     is also fully hidden (display:none) via JS whenever the panel is open,
+     so body never has to center two visible children at once. */
+  .app-mode body { display: flex; align-items: center; justify-content: center; }
+  /* Defense-in-depth, added 2026-09-24 alongside the .badge containing-
+     block fix above: the widget is a borderless bubble/panel, never a
+     scrollable page, so it should never be ABLE to show a native
+     scrollbar regardless of what causes overflow — a scrollbar eating
+     into a 72x72 window is what turned one small positioning bug into a
+     visibly broken shape. .thread keeps its own internal overflow-y:auto
+     unaffected (nested scroll context, not the page itself). */
+  .app-mode, .app-mode body { overflow: hidden; }
+  .app-mode .thread { flex: 1 1 auto; max-height: none; }
+  /* .thread:empty{display:none} (below) is meant for the website popup,
+     where the palette auto-sizes to its content — an empty thread there
+     should collapse rather than leave a blank scroll box. In app-mode the
+     palette is a fixed-size real OS window (main.js's PANEL_W/PANEL_H), so
+     something has to keep claiming the thread's flex space even with zero
+     messages, or the leftover height collapses into a gap below the input
+     row instead of sitting between the header and the chips/input, where
+     a chat UI's empty state normally goes. */
+  .app-mode .thread:empty { display: flex; }
+  .app-mode .palette.open { display: flex; flex-direction: column; animation: none; opacity: 1; transform: none; }
+
+  .head {
+    /* Solid brand-green header bar, added 2026-09-25 — --header-bg/-fg
+       are theme-invariant (see :root), so this looks the same in light
+       and dark mode on purpose. No border-bottom anymore — a hard
+       neutral-gray line looked like a stray artifact against a solid
+       color bar; the color change itself is separation enough. */
+    display: flex; align-items: center; gap: 10px; padding: 16px 18px;
+    background: var(--header-bg);
+  }
+  .mark {
+    width: 26px; height: 26px; border-radius: 7px; background: var(--accent-bg);
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .mark svg { width: 15px; height: 15px; }
+  .head-name { font-size: 14px; font-weight: 600; color: var(--header-fg); white-space: nowrap; flex-shrink: 0; }
+  .head-status {
+    font-size: 12px; color: var(--header-fg-muted); margin-left: auto; display: flex;
+    align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    /* Found 2026-09-29: adding the settings gear button crowded the header
+       enough that .head-name ("AGMC X") started wrapping onto two lines —
+       it had no flex-shrink:0/white-space:nowrap of its own, so the flex
+       layout shrank it instead of this. Fixed by pinning head-name (see
+       its own rule) and letting THIS element (the least critical piece —
+       a connection-status label) be the one that truncates first if the
+       header is ever this tight again. */
+  }
+  /* Model picker - Claude-app style: a small pill beside the send button that
+     opens a menu of models (name, one-line description, check on the active
+     one). Replaced the header's segmented toggle so the header stays free for
+     the connection status. */
+  .model-wrap { position: relative; flex: none; }
+  .model-pill {
+    display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 8px 0 11px;
+    border-radius: 15px; border: 0.5px solid var(--border-strong); background: var(--chip-bg);
+    color: var(--text-secondary); font-size: 12.5px; font-family: inherit; cursor: pointer;
+    white-space: nowrap;
+  }
+  .model-pill:hover, .model-pill.open { background: var(--surface-2); color: var(--text); }
+  .model-pill:disabled { opacity: 0.5; cursor: default; }
+  .model-pill svg { width: 12px; height: 12px; flex: none; transition: transform 0.15s; }
+  .model-pill.open svg { transform: rotate(180deg); }
+  .model-menu {
+    position: absolute; bottom: 40px; right: 0; width: 262px;
+    background: var(--chip-bg); border: 0.5px solid var(--border-strong); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 6px; display: none; z-index: 12;
+  }
+  .model-menu.open { display: block; }
+  .model-opt {
+    display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: transparent;
+    padding: 9px 10px; border-radius: 9px; font-family: inherit; text-align: left; cursor: pointer;
+    color: var(--text);
+  }
+  .model-opt:hover { background: var(--surface-2); }
+  .model-opt .mo-text { flex: 1; min-width: 0; }
+  .model-opt .mo-name { display: block; font-size: 13.5px; font-weight: 600; }
+  .model-opt .mo-desc { display: block; font-size: 12px; color: var(--text-secondary); margin-top: 1px; line-height: 1.35; }
+  .model-opt .mo-check { width: 16px; height: 16px; flex: none; color: var(--accent); visibility: hidden; }
+  .model-opt.active .mo-check { visibility: visible; }
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--status-ok);
+    /* Base/pre-JS default only — checkBackend()/send() in the script
+       below set this directly to var(--status-ok) or var(--danger) once
+       the real state is known. --status-ok, not --success: a header
+       that's ALWAYS dark green needs a BRIGHTER green for this dot to
+       actually be legible against it — see the --status-ok comment in
+       :root for why. Don't change this back to var(--success) — that's
+       the same dark-green-on-dark-green legibility problem this fixes. */
+  }
+  .close-btn {
+    border: none; background: transparent; color: var(--header-fg-muted); cursor: pointer;
+    width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 6px;
+  }
+  .close-btn:hover { background: rgba(255,255,255,0.16); color: var(--header-fg); }
+  .close-btn svg { width: 14px; height: 14px; }
+
+  .thread { max-height: 320px; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .thread:empty { display: none; }
+  .msg { display: flex; }
+  .msg.user { justify-content: flex-end; }
+  .bubble { max-width: 84%; padding: 9px 13px; border-radius: 12px; font-size: 14px; line-height: 1.5; overflow-x: auto; }
+  .msg.user .bubble { background: var(--accent); color: var(--bg); border-bottom-right-radius: 4px; }
+  .msg.assist .bubble { background: var(--surface-2); border: 0.5px solid var(--border); border-bottom-left-radius: 4px; }
+  .bubble p { margin: 0 0 8px; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble ul, .bubble ol { margin: 4px 0 8px; padding-left: 18px; }
+  .bubble li { margin-bottom: 3px; }
+  .bubble strong { font-weight: 600; }
+  .bubble code { background: var(--border); border-radius: 4px; padding: 1px 5px; font-size: 12.5px; }
+  .bubble table { border-collapse: collapse; font-size: 12.5px; margin: 6px 0 8px; white-space: nowrap; }
+  .bubble table:last-child { margin-bottom: 0; }
+  .bubble th, .bubble td { padding: 5px 10px; border: 0.5px solid var(--border-strong); text-align: left; }
+  .bubble th { background: var(--surface); font-weight: 600; color: var(--text-secondary); }
+
+  .status-line { font-size: 12.5px; color: var(--text-muted); margin-bottom: 5px; }
+  .typing { display: inline-flex; gap: 4px; padding: 4px 2px; }
+  .typing span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted);
+    animation: typingBounce 1.2s infinite ease-in-out;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .typing span { animation: none; opacity: 0.7; }
+  }
+
+  .approval { background: var(--surface-2); border: 0.5px solid var(--border-strong); border-radius: 12px; padding: 12px 14px; max-width: 90%; }
+  .approval .a-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .approval .a-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); padding: 3px 0; }
+  .approval .a-row span:last-child { color: var(--text); font-weight: 500; }
+  /* Long, multi-line values (an email body) don't fit a side-by-side row —
+     stack the label above the value instead, like an email client would. */
+  .approval .a-row-block { display: block; font-size: 13px; color: var(--text-secondary); padding: 3px 0; }
+  .approval .a-row-block > span:first-child { display: block; margin-bottom: 3px; }
+  .approval .a-row-block > span:last-child { display: block; color: var(--text); font-weight: 500; white-space: pre-wrap; }
+  .approval .a-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .approval button { flex: 1; border: none; border-radius: 8px; padding: 7px 0; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; }
+  .btn-confirm { background: var(--success-bg); color: var(--success); }
+  .btn-cancel { background: var(--danger-bg); color: var(--danger); }
+  .approval.resolved .a-actions { display: none; }
+  .approval .a-outcome { font-size: 13px; font-weight: 500; margin-top: 8px; }
+  .a-outcome.ok { color: var(--success); } .a-outcome.no { color: var(--danger); }
+  .a-outcome p { margin: 0 0 8px; }
+  .a-outcome p:last-child { margin-bottom: 0; }
+  .a-outcome .booking-links { list-style: none; margin: 0 0 8px; padding: 0; font-weight: 400; }
+  .a-outcome .booking-links:last-child { margin-bottom: 0; }
+  .a-outcome .booking-links li { padding: 3px 0; }
+  .a-outcome .booking-links a { color: var(--success); font-weight: 600; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 18px 14px; }
+  .chip {
+    display: flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 20px;
+    border: 0.5px solid var(--border-strong); background: var(--chip-bg); font-size: 12.5px;
+    color: var(--text-secondary); cursor: pointer; font-family: inherit;
+  }
+  .chip:hover { background: var(--surface-2); color: var(--text); }
+  .chip svg { width: 13px; height: 13px; flex: none; }
+
+  .inputrow { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-top: 0.5px solid var(--border); }
+  .inputrow input {
+    flex: 1; border: none; background: transparent; font-family: inherit; font-size: 14px;
+    color: var(--text); outline: none; padding: 6px 4px;
+  }
+  .inputrow input::placeholder { color: var(--text-muted); }
+  .inputrow input:disabled { opacity: 0.5; }
+  .send {
+    width: 30px; height: 30px; border-radius: 8px; border: none; background: var(--accent);
+    color: var(--accent-fg); display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: filter 0.15s; flex: none;
+  }
+  .send:hover:not(:disabled) { filter: brightness(1.15); }
+  .send:disabled { opacity: 0.5; cursor: default; }
+  .send svg { width: 14px; height: 14px; }
+
+  .plus-wrap { position: relative; }
+  .plus-btn {
+    width: 30px; height: 30px; border-radius: 8px; border: 0.5px solid var(--border-strong);
+    background: var(--chip-bg); color: var(--text-secondary); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; flex: none; transition: transform 0.15s;
+  }
+  .plus-btn:hover { background: var(--surface-2); color: var(--text); }
+  .plus-btn.open { transform: rotate(45deg); }
+  .plus-btn svg { width: 15px; height: 15px; }
+  .plus-menu {
+    position: absolute; bottom: 40px; left: 0; width: 216px;
+    background: var(--chip-bg); border: 0.5px solid var(--border-strong); border-radius: 12px;
+    box-shadow: var(--shadow); padding: 6px; display: none; z-index: 11;
+  }
+  .plus-menu.open { display: block; }
+  .plus-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: transparent;
+    padding: 8px 9px; border-radius: 8px; font-size: 13px; color: var(--text); cursor: pointer;
+    font-family: inherit; text-align: left;
+  }
+  .plus-item:hover { background: var(--surface-2); }
+  .plus-item svg { width: 16px; height: 16px; color: var(--text-secondary); flex: none; }
+
+  /* ---- UI pass, 2026-09-30 ------------------------------------------------
+     Welcome screen, live progress steps, inbox cards, collapsing shortcut
+     chips, new-chat and copy buttons. Colours are all existing theme
+     variables — the brief was "the colours are okay, just the overall feel". */
+
+  /* Empty state: a greeting in the thread area, shortcuts as a 2-column grid. */
+  .welcome { margin: auto; text-align: center; padding: 8px 12px; }
+  .welcome-mark {
+    width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 12px; background: var(--accent);
+    color: var(--accent-fg); display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .welcome-title { font-size: 18px; font-weight: 600; color: var(--text); }
+  .welcome-sub { font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.45; }
+  .palette:not(.has-chat) .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 18px 16px; }
+  .palette:not(.has-chat) .chip { padding: 10px 10px; border-radius: 12px; font-size: 12.5px; gap: 7px; text-align: left; }
+  .palette:not(.has-chat) .chip svg { width: 15px; height: 15px; }
+  /* "New chat" only makes sense once there is a conversation to leave. */
+  .palette:not(.has-chat) .chip-new { display: none; }
+  .chip-new { color: var(--accent-text); border-color: var(--accent); }
+  /* Once a conversation exists the chips shrink to one scrollable row instead
+     of permanently taking a third of the panel. */
+  .palette.has-chat .actions {
+    flex-wrap: nowrap; overflow-x: auto; padding: 8px 18px 12px; scrollbar-width: none;
+    /* overflow makes this flex item's min-height 0, so as the thread grew the
+       column squeezed the chip row smaller and smaller — never let it shrink. */
+    flex: none;
+  }
+  .palette.has-chat .actions::-webkit-scrollbar { display: none; }
+  .palette.has-chat .chip { flex: none; white-space: nowrap; padding: 7px 13px; }
+
+  /* Live progress while a reply is being worked on. */
+  .progress { display: flex; flex-direction: column; gap: 7px; min-width: 190px; }
+  .p-step { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); }
+  .p-step.active { color: var(--text); }
+  .p-ico { width: 14px; height: 14px; flex: none; display: flex; align-items: center; justify-content: center; }
+  .p-ico svg { width: 13px; height: 13px; color: var(--success); }
+  .p-spin {
+    width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border-strong);
+    border-top-color: var(--accent); animation: pSpin 0.8s linear infinite;
+  }
+  @keyframes pSpin { to { transform: rotate(360deg); } }
+  .p-time { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 12px; }
+  .p-hint { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-top: 2px; }
+  @media (prefers-reduced-motion: reduce) { .p-spin { animation-duration: 2.4s; } }
+
+  /* Inbox summary as cards, one per person. */
+  .inbox-cards { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .inbox-head { font-size: 12.5px; color: var(--text-secondary); padding: 0 2px; }
+  .inbox-card {
+    display: flex; gap: 11px; align-items: flex-start; background: var(--surface-2);
+    border: 0.5px solid var(--border-strong); border-radius: 12px; padding: 11px 12px;
+  }
+  .ib-avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex: none; display: flex; align-items: center;
+    justify-content: center; color: #fff; font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .ib-body { min-width: 0; flex: 1; }
+  .ib-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .ib-name { font-size: 13.5px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+  .ib-pill {
+    font-size: 11px; line-height: 1; padding: 3px 7px; border-radius: 10px; background: var(--accent-bg);
+    color: var(--accent-text); font-weight: 500; white-space: nowrap;
+  }
+  .ib-pill.unread { background: var(--accent); color: var(--accent-fg); }
+  .ib-text { font-size: 13px; line-height: 1.45; color: var(--text); margin-top: 4px; overflow-wrap: anywhere; }
+  .ib-reply {
+    margin-top: 7px; border: none; background: transparent; padding: 0; font: inherit; font-size: 12px;
+    font-weight: 600; color: var(--accent-text); cursor: pointer;
+  }
+  .ib-reply:hover { text-decoration: underline; }
+
+  /* Copy button on assistant replies (appears on hover / keyboard focus). */
+  .msg.assist { position: relative; }
+  .copy-btn {
+    position: absolute; right: 6px; bottom: -9px; width: 24px; height: 24px; border-radius: 7px;
+    border: 0.5px solid var(--border-strong); background: var(--chip-bg); color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .copy-btn svg { width: 13px; height: 13px; }
+  .msg.assist:hover .copy-btn, .copy-btn:focus-visible { opacity: 1; }
+  .copy-btn.done { color: var(--success); opacity: 1; }
+</style>
+</head>
+<body>
+
+<button class="mascot" id="mascotBtn" aria-label="Open AGMC X">
+  <span class="badge" id="badge"></span>
+<img src="data:image/png;base64,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" alt="AGMC Assist" style="display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;">
+</button>
+
+<div class="palette" id="palette">
+  <div class="head">
+    <span class="head-name">AGMC X</span>
+    <span class="head-status"><span class="dot" id="statusDot"></span><span id="statusText">Connecting…</span></span>
+    <button class="close-btn" id="closeBtn" aria-label="Minimize to bubble" title="Minimize (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 18h14"/></svg></button>
+  </div>
+  <div class="thread" id="thread">
+    <div class="welcome" id="welcome">
+      <div class="welcome-mark">A</div>
+      <div class="welcome-title" id="welcomeTitle">Hello</div>
+      <div class="welcome-sub">Ask about your inbox, calendar, travel or the web — or pick a shortcut below.</div>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="chip chip-new" id="newChatBtn" type="button" title="Start a fresh conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>New chat</button>
+    <button class="chip" data-q="Summarize my inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Summarize inbox</button>
+    <button class="chip" data-fill="Schedule a meeting with "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Schedule a meeting</button>
+    <button class="chip" data-fill="Find a flight from Dubai to "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 13l7-1 5-8 2 1-3 8 6 1v2l-6 1 3 8-2 1-5-8-7-1z"/></svg>Book a flight</button>
+    <button class="chip" data-fill="Find a hotel in "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21V7l7-4 7 4v14M9 21v-6h4v6M3 11h18"/></svg>Book a hotel</button>
+    <button class="chip" data-q="Any notable social mentions today?"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.5 8.5 0 01-12.8 7.3L3 20l1.2-5.2A8.5 8.5 0 1121 11.5z"/></svg>Social mentions</button>
+    <button class="chip" id="readFileChip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h6l5 5v11a2 2 0 01-2 2H8a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M14 3v5h5"/></svg>Read a file</button>
+  </div>
+  <div class="inputrow">
+    <div class="plus-wrap">
+      <button class="plus-btn" id="plusBtn" aria-label="Connect tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div class="plus-menu" id="plusMenu">
+        <button class="plus-item" data-connect="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Connect your inbox</button>
+        <button class="plus-item" data-connect="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Connect your calendar</button>
+        <button class="plus-item" data-connect="web"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18 14 14 0 010-18z"/></svg>Search the web</button>
+        <button class="plus-item" data-connect="social"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.5 8.5 0 01-12.8 7.3L3 20l1.2-5.2A8.5 8.5 0 1121 11.5z"/></svg>Connect social accounts</button>
+        <button class="plus-item" id="plusFileItem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h6l5 5v11a2 2 0 01-2 2H8a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M14 3v5h5"/></svg>Attach a file</button>
+      </div>
+    </div>
+    <input id="input" type="text" placeholder="Ask anything…" />
+    <div class="model-wrap">
+      <button type="button" class="model-pill" id="modelPill" aria-haspopup="true" aria-expanded="false" title="Choose model"><span id="modelPillLabel">Claude</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="model-menu" id="modelMenu" role="menu">
+        <button type="button" class="model-opt active" role="menuitemradio" data-provider="anthropic"><span class="mo-text"><span class="mo-name">Claude</span><span class="mo-desc">Most capable. Web search, images, best for complex requests.</span></span><svg class="mo-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+        <button type="button" class="model-opt" role="menuitemradio" data-provider="ollama"><span class="mo-text"><span class="mo-name" id="localName">Local</span><span class="mo-desc">Runs on this PC. Private and works offline, but slower and simpler.</span></span><svg class="mo-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+      </div>
+    </div>
+    <button class="send" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+</div>
+
+<input type="file" id="fileInput" style="display:none" accept=".txt,.md,.csv,.json,.log,.py,.yaml,.yml,.pdf,.docx,.xlsx,.xlsm,.png,.jpg,.jpeg">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script>
+const thread = document.getElementById('thread');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const palette = document.getElementById('palette');
+const mascotBtn = document.getElementById('mascotBtn');
+const badge = document.getElementById('badge');
+const closeBtn = document.getElementById('closeBtn');
+
+// desktop_app.py opens this file with #app=1 (a hash fragment, not a query
+// string — a file:// URL's query string isn't reliably split from the
+// path, it broke WebView2 outright with ERR_FILE_NOT_FOUND; a fragment is
+// always client-side-only, so it's the safe form here). See the .app-mode
+// CSS above. In this mode desktop_app.py's OS window is the actual thing
+// being resized between bubble and panel size — CSS alone can't do that
+// for a real frameless window — so mascot/close clicks call its exposed
+// expand()/collapse() alongside the normal palette open/close.
+//
+// desktop/main.js (Electron) is the current desktop shell — replaced an
+// earlier pywebview-based one (desktop_app.py, now removed) that hit
+// real, unresolved window-transparency and exact-sizing reliability
+// problems. window.electronAPI comes from desktop/preload.js's
+// contextBridge — never window.pywebview, that API no longer exists.
+const isDesktopApp = new URLSearchParams(location.hash.slice(1)).get('app') === '1';
+if (isDesktopApp) {
+  document.documentElement.classList.add('app-mode');
+  // Cold-launch-only bug, found and fixed 2026-09-24: the bubble renders
+  // as a squashed ellipse instead of a circle on the very first open,
+  // then reliably snaps to a correct circle the moment the CEO opens and
+  // closes the panel once. Three attempts to fix this in desktop/main.js
+  // by forcing the native OS window's bounds (in different ways) did NOT
+  // work — which pointed away from window bounds entirely. What closeBtn's
+  // handler below actually does as a side effect (from the giant-mascot-
+  // on-scroll fix, also 2026-09-24) is toggle mascotBtn.style.display from
+  // 'none' back to '' — forcing the browser to redo the mascot element's
+  // layout from scratch. Cold launch never runs that code path, since it
+  // only happens after a real expand()/collapse() cycle — which is exactly
+  // why a fresh launch shows the bug and a manual click always fixes it.
+  // Replicating that same toggle once at startup, before the window is
+  // ever shown (main.js's show:false + ready-to-show), applies the same
+  // fix without waiting for a real click.
+  mascotBtn.style.display = 'none';
+  void mascotBtn.offsetHeight; // force a synchronous layout flush between the two writes, not a coalesced no-op
+  mascotBtn.style.display = '';
+}
+
+mascotBtn.addEventListener('click', () => {
+  palette.classList.add('open');
+  badge.style.display = 'none';
+  input.focus();
+  if (isDesktopApp && window.electronAPI) {
+    // In app-mode the mascot and palette are both forced to fill 100% of
+    // the single real OS window (see .app-mode CSS) rather than being
+    // independently positioned like they are on the website popup, where
+    // both stay visible together (floating bubble + panel above it) by
+    // design. Left unhidden here, the mascot remains a second full-window
+    // element stacked above the palette in the body, which just shows up
+    // as extra scrollable height — i.e. a giant mascot revealed by
+    // scrolling up in the panel.
+    mascotBtn.style.display = 'none';
+    window.electronAPI.expand();
+  }
+});
+
+function collapsePanel() {
+  palette.classList.remove('open');
+  if (isDesktopApp && window.electronAPI) {
+    mascotBtn.style.display = '';
+    window.electronAPI.collapse();
+  }
+}
+closeBtn.addEventListener('click', collapsePanel);
+// Esc minimizes back to the bubble, but only when no menu is open (Esc then
+// closes that menu first — see the model picker's own Esc handler).
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape' || !palette.classList.contains('open')) return;
+  const menuOpen = document.querySelector('.plus-menu.open, .model-menu.open');
+  if (!menuOpen) collapsePanel();
+});
+
+const plusBtn = document.getElementById('plusBtn');
+const plusMenu = document.getElementById('plusMenu');
+
+plusBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  plusMenu.classList.toggle('open');
+  plusBtn.classList.toggle('open');
+});
+document.addEventListener('click', (e) => {
+  if (!plusMenu.contains(e.target) && e.target !== plusBtn) {
+    plusMenu.classList.remove('open');
+    plusBtn.classList.remove('open');
+  }
+});
+
+const connectReplies = {
+  inbox: 'Connected to Outlook. I can now read and summarize your inbox.',
+  calendar: 'Connected to your calendar. I can now check availability and schedule meetings.',
+  web: 'Web search is on. I\'ll pull live results when a question needs current information.',
+  social: 'Connected to Instagram, Facebook and X. I can now surface mentions and activity.'
+};
+document.querySelectorAll('.plus-item[data-connect]').forEach(item => item.addEventListener('click', () => {
+  plusMenu.classList.remove('open');
+  plusBtn.classList.remove('open');
+  addMsg(connectReplies[item.dataset.connect], 'assist');
+}));
+
+// marked.parse's plain <a href="..."> links navigate the popup itself away
+// from the conversation (it's a small embedded window, not a full browser
+// tab) — force every rendered link to open in a real new tab instead, same
+// as the booking-approval card's hand-written links already do.
+function renderMarkdown(el, text) {
+  el.innerHTML = marked.parse(text);
+  el.querySelectorAll('a').forEach(a => {
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+  });
+}
+
+// Approval cards below build their HTML by string concatenation, and some
+// of the fields (email body, meeting subject, the LLM's own proposal text)
+// can contain attacker-influenced content — e.g. a scraped/read email whose
+// body was crafted to inject markup. Escape before interpolating, same
+// reasoning as forcing target="_blank" above: don't let content the model
+// only read back out become something that runs in the CEO's own browser.
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function addMsg(text, who) {
+  const row = document.createElement('div');
+  row.className = 'msg ' + who;
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  if (who === 'assist') {
+    renderMarkdown(b, text);
+  } else {
+    b.textContent = text;
+  }
+  row.appendChild(b);
+  if (who === 'assist') attachCopy(row);
+  thread.appendChild(row);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+// ---- UI pass, 2026-09-30 -----------------------------------------------------
+// Welcome screen / chip layout follow whether a conversation exists.
+const welcomeEl = document.getElementById('welcome');
+function setGreeting() {
+  const h = new Date().getHours();
+  document.getElementById('welcomeTitle').textContent = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
+setGreeting();
+function syncChatState() {
+  const has = !!thread.querySelector('.msg, .approval');
+  palette.classList.toggle('has-chat', has);
+  welcomeEl.style.display = has ? 'none' : '';
+}
+new MutationObserver(syncChatState).observe(thread, { childList: true });
+syncChatState();
+
+// New chat: a new session id, so the backend starts a fresh conversation too.
+document.getElementById('newChatBtn').addEventListener('click', () => {
+  if (sendBtn.disabled) return;  // never mid-reply
+  SESSION_ID = 'ceo-session-' + Date.now();
+  thread.replaceChildren(welcomeEl);
+  setGreeting();
+  input.value = '';
+  input.focus();
+});
+
+const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>';
+const CHECK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+function attachCopy(row) {
+  if (row.querySelector('.copy-btn')) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'copy-btn';
+  btn.setAttribute('aria-label', 'Copy reply');
+  btn.title = 'Copy';
+  btn.innerHTML = COPY_ICON;
+  btn.addEventListener('click', async () => {
+    const source = row.querySelector('.bubble, .inbox-cards');
+    const text = source ? source.innerText : '';
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch {}
+      ta.remove();
+    }
+    btn.classList.add('done');
+    btn.innerHTML = CHECK_ICON;
+    setTimeout(() => { btn.classList.remove('done'); btn.innerHTML = COPY_ICON; }, 1200);
+  });
+  row.appendChild(btn);
+}
+
+// Live progress inside the reply bubble while work is in flight: the steps so
+// far (finished ones ticked), the current one with a spinner, and elapsed
+// time. The local model can take a minute or more on this PC — dots alone read
+// as "stuck". Structure is rebuilt only when a step changes; the timer only
+// updates text, so the spinner animation isn't restarted every second.
+function createProgress(bubble) {
+  const started = Date.now();
+  const steps = [];
+  let timer = null, timeEl = null, hintEl = null;
+  const isLocal = () => !!document.querySelector('.model-opt.active[data-provider="ollama"]');
+  const fmt = (s) => s < 60 ? s + 's' : Math.floor(s / 60) + 'm ' + String(s % 60).padStart(2, '0') + 's';
+  function build() {
+    const wrap = document.createElement('div');
+    wrap.className = 'progress';
+    wrap.setAttribute('role', 'status');
+    wrap.setAttribute('aria-live', 'polite');
+    steps.forEach((label, i) => {
+      const active = i === steps.length - 1;
+      const row = document.createElement('div');
+      row.className = 'p-step' + (active ? ' active' : '');
+      const ico = document.createElement('span');
+      ico.className = 'p-ico';
+      if (active) {
+        const sp = document.createElement('span');
+        sp.className = 'p-spin';
+        ico.appendChild(sp);
+      } else {
+        ico.innerHTML = CHECK_ICON;
+      }
+      const text = document.createElement('span');
+      text.textContent = label;
+      row.append(ico, text);
+      if (active) {
+        timeEl = document.createElement('span');
+        timeEl.className = 'p-time';
+        row.appendChild(timeEl);
+      }
+      wrap.appendChild(row);
+    });
+    hintEl = document.createElement('div');
+    hintEl.className = 'p-hint';
+    hintEl.hidden = true;
+    wrap.appendChild(hintEl);
+    bubble.replaceChildren(wrap);
+    tick();
+  }
+  function tick() {
+    const secs = Math.floor((Date.now() - started) / 1000);
+    if (timeEl) timeEl.textContent = fmt(secs);
+    if (hintEl && secs >= 12 && isLocal()) {
+      hintEl.textContent = 'Running on this PC — the local model can take a minute or two.';
+      hintEl.hidden = false;
+    }
+  }
+  return {
+    start() { steps.push('Thinking…'); build(); timer = setInterval(tick, 1000); },
+    step(label) { if (steps[steps.length - 1] !== label) { steps.push(label); build(); } },
+    stop() { if (timer) { clearInterval(timer); timer = null; } },
+  };
+}
+
+// The inbox summary as one card per person (see orchestrator._inbox_cards_payload).
+// Built with textContent only: names and blurbs come from email content.
+const AVATAR_COLORS = ['#153804', '#8A6A2F', '#3B4A5A', '#1F5F5B', '#5B3A29'];
+function renderInboxCards(container, data) {
+  container.className = 'inbox-cards';
+  const head = document.createElement('div');
+  head.className = 'inbox-head';
+  head.textContent = data.total + ' recent email' + (data.total === 1 ? '' : 's') + ' · ' + data.people + (data.people === 1 ? ' person' : ' people');
+  const cards = [head];
+  for (const s of data.senders) {
+    const card = document.createElement('div');
+    card.className = 'inbox-card';
+    const parts = (s.name || '?').split(/\s+/).filter(Boolean);
+    const avatar = document.createElement('div');
+    avatar.className = 'ib-avatar';
+    avatar.textContent = ((parts[0] || '?')[0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+    let h = 0;
+    for (const c of s.name || '') h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    avatar.style.background = AVATAR_COLORS[h % AVATAR_COLORS.length];
+    const body = document.createElement('div');
+    body.className = 'ib-body';
+    const top = document.createElement('div');
+    top.className = 'ib-top';
+    const name = document.createElement('span');
+    name.className = 'ib-name';
+    name.textContent = s.name;
+    top.appendChild(name);
+    if (s.count > 1) {
+      const p = document.createElement('span');
+      p.className = 'ib-pill';
+      p.textContent = s.count + ' emails';
+      top.appendChild(p);
+    }
+    if (s.unread) {
+      const p = document.createElement('span');
+      p.className = 'ib-pill unread';
+      p.textContent = s.unread + ' unread';
+      top.appendChild(p);
+    }
+    const text = document.createElement('div');
+    text.className = 'ib-text';
+    text.textContent = s.blurb;
+    const reply = document.createElement('button');
+    reply.type = 'button';
+    reply.className = 'ib-reply';
+    reply.textContent = 'Reply';
+    reply.addEventListener('click', () => {
+      input.value = 'reply to ' + s.name + ' and say ';
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
+    body.append(top, text, reply);
+    card.append(avatar, body);
+    cards.push(card);
+  }
+  container.replaceChildren(...cards);
+}
+
+function addApproval(title, rows) {
+  const row = document.createElement('div');
+  row.className = 'msg assist';
+  const card = document.createElement('div');
+  card.className = 'approval';
+  card.innerHTML = '<div class="a-title">' + title + '</div>' +
+    rows.map(r => '<div class="a-row"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>').join('') +
+    '<div class="a-actions"><button class="btn-confirm">Confirm</button><button class="btn-cancel">Cancel</button></div>';
+  row.appendChild(card);
+  thread.appendChild(row);
+  thread.scrollTop = thread.scrollHeight;
+  card.querySelector('.btn-confirm').onclick = () => resolve(card, true, title);
+  card.querySelector('.btn-cancel').onclick = () => resolve(card, false, title);
+}
+
+function resolve(card, ok, title) {
+  card.classList.add('resolved');
+  const out = document.createElement('div');
+  out.className = 'a-outcome ' + (ok ? 'ok' : 'no');
+  out.textContent = ok ? 'Confirmed — sent for execution.' : 'Cancelled — nothing was sent.';
+  card.appendChild(out);
+}
+
+// Real (non-demo) flight booking approval: Confirm here only ever fetches a
+// booking link from our own backend — the actual purchase happens when the
+// CEO clicks through and completes it himself on the airline/OTA's site.
+function addBookingApproval(booking) {
+  const row = document.createElement('div');
+  row.className = 'msg assist';
+  const card = document.createElement('div');
+  card.className = 'approval';
+  card.innerHTML = '<div class="a-title">Book flight</div>' +
+    [['Airline', booking.airline], ['Route', booking.route], ['Dates', booking.dates], ['Flights', booking.flights], ['Fare', booking.price]]
+      .filter(r => r[1])
+      .map(r => '<div class="a-row"><span>' + r[0] + '</span><span>' + escapeHtml(r[1]) + '</span></div>').join('') +
+    '<div class="a-actions"><button class="btn-confirm">Get booking link</button><button class="btn-cancel">Cancel</button></div>';
+  row.appendChild(card);
+  thread.appendChild(row);
+  thread.scrollTop = thread.scrollHeight;
+
+  const confirmBtn = card.querySelector('.btn-confirm');
+  const cancelBtn = card.querySelector('.btn-cancel');
+
+  cancelBtn.onclick = () => {
+    card.classList.add('resolved');
+    const out = document.createElement('div');
+    out.className = 'a-outcome no';
+    out.textContent = 'Cancelled — nothing was requested.';
+    card.appendChild(out);
+  };
+
+  confirmBtn.onclick = async () => {
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    confirmBtn.textContent = 'Fetching link…';
+    const out = document.createElement('div');
+    try {
+      const res = await fetch(BOOKING_LINK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: SESSION_ID, ignav_id: booking.ignav_id })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        out.className = 'a-outcome ok';
+        let html = '';
+
+        if (data.note) {
+          html += '<p>' + data.note + '</p>';
+        }
+
+        if (data.options && data.options.length) {
+          // Defense in depth: the proposal card's price/airline/route text
+          // came from the model's own reply, not from re-verified data — in
+          // principle, injected content could talk it into proposing a valid
+          // ignav_id with misleading display text. The ignav_id itself is
+          // already hard-validated server-side (see main.py), but cross-check
+          // the price too: if what was proposed doesn't match what we just
+          // actually found, say so rather than silently trusting the proposal.
+          const proposedPrice = parseFloat((booking.price || '').replace(/[^0-9.]/g, ''));
+          const realPrice = data.options[0].price_total;
+          const priceMismatch = proposedPrice && realPrice != null &&
+            Math.abs(proposedPrice - realPrice) / realPrice > 0.05;
+          if (priceMismatch) {
+            html += '<p><strong>Heads up: the price shown when this was proposed (' + booking.price +
+              ') doesn’t match what was just found below — treat the fare details above with caution and verify independently.</strong></p>';
+          }
+          html += '<p>' + (data.options.length > 1
+            ? 'Found ' + data.options.length + ' booking sites carrying this fare — cheapest first:'
+            : 'Ready to complete the purchase:') + '</p>';
+          const items = data.options.map((opt, i) => {
+            const priceStr = opt.price_total != null ? (opt.currency || '') + ' ' + opt.price_total.toLocaleString() : '';
+            const homepage = opt.homepage_url
+              ? ' (if that link is rejected, try <a href="' + opt.homepage_url + '" target="_blank" rel="noopener">' +
+                opt.provider_name + '’s homepage</a> and search manually)'
+              : '';
+            return '<li><a href="' + opt.url + '" target="_blank" rel="noopener">' +
+              (opt.provider_name || 'Provider') + '</a>' + (priceStr ? ' — ' + priceStr : '') +
+              (i === 0 ? ' <strong>(cheapest)</strong>' : '') + homepage + '</li>';
+          }).join('');
+          html += '<ul class="booking-links">' + items + '</ul>' +
+            '<p>Click through to complete the purchase yourself, with your own payment method — nothing is booked or charged by this assistant. ' +
+            'Note: airline sites sometimes reject these direct links as automated traffic and show a "restricted" or error page — ' +
+            'that’s the airline’s bot-detection, not a real problem with the fare; use the homepage fallback above if it happens.</p>';
+        }
+
+        if (data.search_links && data.search_links.length) {
+          // Deliberately separate from the priced options above: these are
+          // plain search-page links we generate ourselves (see
+          // flight_tool._generated_search_links) for the same route/dates —
+          // reliable (no ad-click session to trigger bot-defense) but NOT
+          // price-verified against what Ignav quoted.
+          const searchItems = data.search_links.map(l =>
+            '<li><a href="' + l.url + '" target="_blank" rel="noopener">' + l.provider_name + '</a></li>'
+          ).join('');
+          html += '<p>' + (data.options && data.options.length ? 'Or search yourself' : 'Search directly') +
+            ' for ' + (booking.route || 'this route') + ', ' + (booking.dates || '') +
+            ' (price not guaranteed to match what was quoted' +
+            (booking.flights ? ' — look for ' + booking.flights + ' to find the matching result' : '') +
+            '):</p>' +
+            '<ul class="booking-links">' + searchItems + '</ul>';
+        }
+
+        out.innerHTML = html;
+      } else {
+        out.className = 'a-outcome no';
+        out.textContent = data.error || 'Could not get a booking link — please search again.';
+      }
+    } catch {
+      out.className = 'a-outcome no';
+      out.textContent = "Could not reach the backend — check uvicorn is running.";
+    }
+    card.classList.add('resolved');
+    card.appendChild(out);
+    thread.scrollTop = thread.scrollHeight;
+  };
+}
+
+// Real send-email approval: Confirm here is the ONLY path that can trigger
+// an actual send (see main.py's /send-email docstring) — the to/subject/
+// body shown here are sent exactly as-is, nothing is re-generated at send
+// time. Mirrors addBookingApproval's shape.
+function addSendEmailApproval(proposal) {
+  const row = document.createElement('div');
+  row.className = 'msg assist';
+  const card = document.createElement('div');
+  card.className = 'approval';
+  card.innerHTML = '<div class="a-title">Send email</div>' +
+    [['To', proposal.to], ['Subject', proposal.subject]]
+      .filter(r => r[1])
+      .map(r => '<div class="a-row"><span>' + r[0] + '</span><span>' + escapeHtml(r[1]) + '</span></div>').join('') +
+    (proposal.body
+      ? '<div class="a-row-block"><span>Body</span><span>' + escapeHtml(proposal.body).replace(/\n/g, '<br>') + '</span></div>'
+      : '') +
+    '<div class="a-actions"><button class="btn-confirm">Send email</button><button class="btn-cancel">Cancel</button></div>';
+  row.appendChild(card);
+  thread.appendChild(row);
+  thread.scrollTop = thread.scrollHeight;
+
+  const confirmBtn = card.querySelector('.btn-confirm');
+  const cancelBtn = card.querySelector('.btn-cancel');
+
+  cancelBtn.onclick = () => {
+    card.classList.add('resolved');
+    const out = document.createElement('div');
+    out.className = 'a-outcome no';
+    out.textContent = 'Cancelled — nothing was sent.';
+    card.appendChild(out);
+  };
+
+  confirmBtn.onclick = async () => {
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    confirmBtn.textContent = 'Sending…';
+    const out = document.createElement('div');
+    try {
+      const res = await fetch(SEND_EMAIL_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: SESSION_ID, to: proposal.to, subject: proposal.subject, body: proposal.body })
+      });
+      const data = await res.json();
+      if (data.ok && data.sent) {
+        out.className = 'a-outcome ok';
+        out.textContent = 'Sent to ' + proposal.to + '.';
+      } else if (data.ok && data.mock) {
+        out.className = 'a-outcome ok';
+        out.textContent = data.note || 'Simulated — no real email was sent.';
+      } else {
+        out.className = 'a-outcome no';
+        out.textContent = data.error || 'Could not send — please try again.';
+      }
+    } catch {
+      out.className = 'a-outcome no';
+      out.textContent = "Could not reach the backend — check uvicorn is running.";
+    }
+    card.classList.add('resolved');
+    card.appendChild(out);
+    thread.scrollTop = thread.scrollHeight;
+  };
+}
+
+// Real reply-to-email approval — added 2026-09-29 alongside the
+// agmc-reply-email block (see orchestrator.py's system prompt): distinct
+// from addSendEmailApproval above because a reply threads onto a real
+// existing message (entry_id) rather than composing a brand-new one.
+// Same isolation as the others — Confirm is the only path that can
+// trigger an actual send.
+function addReplyEmailApproval(proposal) {
+  const row = document.createElement('div');
+  row.className = 'msg assist';
+  const card = document.createElement('div');
+  card.className = 'approval';
+  card.innerHTML = '<div class="a-title">Reply to email</div>' +
+    '<div class="a-row-block"><span>Replying to</span><span class="reply-target">checking…</span></div>' +
+    (proposal.reply_all ? '<div class="a-row"><span>To</span><span>Sender + all recipients</span></div>' : '') +
+    (proposal.body
+      ? '<div class="a-row-block"><span>Reply</span><span>' + escapeHtml(proposal.body).replace(/\n/g, '<br>') + '</span></div>'
+      : '') +
+    '<div class="a-actions"><button class="btn-confirm">Send reply</button><button class="btn-cancel">Cancel</button></div>';
+  row.appendChild(card);
+  thread.appendChild(row);
+  thread.scrollTop = thread.scrollHeight;
+
+  const confirmBtn = card.querySelector('.btn-confirm');
+  const cancelBtn = card.querySelector('.btn-cancel');
+
+  // The "who/which email" comes from the server's own record of real emails
+  // (see main.py /reply-target), not from the proposal block the model wrote.
+  const targetEl = card.querySelector('.reply-target');
+  fetch(REPLY_TARGET_URL + '?session_id=' + encodeURIComponent(SESSION_ID) + '&entry_id=' + encodeURIComponent(proposal.entry_id || ''))
+    .then(r => r.json())
+    .then(t => {
+      if (t.ok) {
+        targetEl.textContent = (t.from_name || t.from || 'Unknown sender') + ' — ' + (t.subject || '(no subject)');
+      } else {
+        targetEl.textContent = "Unknown email — this reply can't be sent";
+        confirmBtn.disabled = true;
+      }
+    })
+    .catch(() => { targetEl.textContent = 'Could not verify which email this replies to'; });
+
+  cancelBtn.onclick = () => {
+    card.classList.add('resolved');
+    const out = document.createElement('div');
+    out.className = 'a-outcome no';
+    out.textContent = 'Cancelled — nothing was sent.';
+    card.appendChild(out);
+  };
+
+  confirmBtn.onclick = async () => {
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    confirmBtn.textContent = 'Sending…';
+    const out = document.createElement('div');
+    try {
+      const res = await fetch(REPLY_EMAIL_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: SESSION_ID, entry_id: proposal.entry_id, body: proposal.body, reply_all: !!proposal.reply_all })
+      });
+      const data = await res.json();
+      if (data.ok && data.sent) {
+        out.className = 'a-outcome ok';
+        out.textContent = 'Reply sent.';
+      } else if (data.ok && data.mock) {
+        out.className = 'a-outcome ok';
+        out.textContent = data.note || 'Simulated — no real reply was sent.';
+      } else {
+        out.className = 'a-outcome no';
+        out.textContent = data.error || 'Could not send — please try again.';
+      }
+    } catch {
+      out.className = 'a-outcome no';
+      out.textContent = "Could not reach the backend — check uvicorn is running.";
+    }
+    card.classList.add('resolved');
+    card.appendChild(out);
+    thread.scrollTop = thread.scrollHeight;
+  };
+}
+
+// Real calendar-booking approval: same isolation as the two above — Confirm
+// is the only path that can trigger an actual event creation.
+function addCalendarApproval(proposal) {
+  const row = document.createElement('div');
+  row.className = 'msg assist';
+  const card = document.createElement('div');
+  card.className = 'approval';
+  const attendeesStr = (proposal.attendees || []).join(', ');
+  card.innerHTML = '<div class="a-title">Book meeting</div>' +
+    [['Subject', proposal.subject], ['Start', proposal.start], ['End', proposal.end], ['Attendees', attendeesStr], ['Location', proposal.location]]
+      .filter(r => r[1])
+      .map(r => '<div class="a-row"><span>' + r[0] + '</span><span>' + escapeHtml(r[1]) + '</span></div>').join('') +
+    '<div class="a-actions"><button class="btn-confirm">Book meeting</button><button class="btn-cancel">Cancel</button></div>';
+  row.appendChild(card);
+  thread.appendChild(row);
+  thread.scrollTop = thread.scrollHeight;
+
+  const confirmBtn = card.querySelector('.btn-confirm');
+  const cancelBtn = card.querySelector('.btn-cancel');
+
+  cancelBtn.onclick = () => {
+    card.classList.add('resolved');
+    const out = document.createElement('div');
+    out.className = 'a-outcome no';
+    out.textContent = 'Cancelled — nothing was booked.';
+    card.appendChild(out);
+  };
+
+  confirmBtn.onclick = async () => {
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    confirmBtn.textContent = 'Booking…';
+    const out = document.createElement('div');
+    try {
+      const res = await fetch(CALENDAR_EVENT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: SESSION_ID, subject: proposal.subject, start: proposal.start, end: proposal.end,
+          attendees: proposal.attendees || [], location: proposal.location || ''
+        })
+      });
+      const data = await res.json();
+      if (data.ok && data.created) {
+        out.className = 'a-outcome ok';
+        out.innerHTML = 'Booked.' + (data.web_link ? ' <a href="' + data.web_link + '" target="_blank" rel="noopener noreferrer">Open in Outlook</a>' : '');
+      } else if (data.ok && data.mock) {
+        out.className = 'a-outcome ok';
+        out.textContent = data.note || 'Simulated — no real event was created.';
+      } else {
+        out.className = 'a-outcome no';
+        out.textContent = data.error || 'Could not book — please try again.';
+      }
+    } catch {
+      out.className = 'a-outcome no';
+      out.textContent = "Could not reach the backend — check uvicorn is running.";
+    }
+    card.classList.add('resolved');
+    card.appendChild(out);
+    thread.scrollTop = thread.scrollHeight;
+  };
+}
+
+function respond(q) {
+  const s = q.toLowerCase();
+  if (s.includes('inbox') || s.includes('email')) {
+    addMsg('Three items need a look: a signed-off Q3 marketing budget from Finance, a scheduling request from the BMW regional office, and a service-department escalation flagged urgent. Everything else is routine.', 'assist');
+  } else if (s.includes('meeting') || s.includes('schedule')) {
+    addMsg('Found an open slot Tuesday 2:00–2:30pm that works for both calendars.', 'assist');
+    addApproval('Send meeting invite', [['With', 'BMW regional distributor'], ['When', 'Tue, 2:00–2:30pm'], ['Location', 'AGMC HQ, Dubai']]);
+  } else if (s.includes('flight')) {
+    addMsg('Best fare found for the route and dates:', 'assist');
+    addApproval('Book flight', [['Route', 'DXB → LHR'], ['Date', 'Tue, direct'], ['Fare', 'AED 3,120, business'], ['Airline', 'Emirates']]);
+  } else if (s.includes('hotel')) {
+    addMsg('Best available rate for the stay:', 'assist');
+    addApproval('Book hotel', [['Property', 'The Berkeley, London'], ['Dates', '3 nights'], ['Rate', 'AED 4,850 total']]);
+  } else if (s.includes('social') || s.includes('mention')) {
+    addMsg('Instagram: a customer post about the new showroom is getting strong engagement. X: one unresolved complaint thread about a service appointment delay, worth a reply.', 'assist');
+  } else {
+    addMsg('I can help with email, scheduling, flights, hotels, current offers, or social mentions — try one of the shortcuts above.', 'assist');
+  }
+}
+
+const BACKEND_URL = 'http://localhost:8000/chat';
+const STREAM_URL = 'http://localhost:8000/chat/stream';
+const UPLOAD_URL = 'http://localhost:8000/upload';
+const BOOKING_LINK_URL = 'http://localhost:8000/booking-link';
+const SEND_EMAIL_URL = 'http://localhost:8000/send-email';
+const REPLY_EMAIL_URL = 'http://localhost:8000/reply-email';
+const REPLY_TARGET_URL = 'http://localhost:8000/reply-target';
+const CALENDAR_EVENT_URL = 'http://localhost:8000/calendar-event';
+const MODEL_URL = 'http://localhost:8000/model';
+const STATUS_URL = 'http://localhost:8000/status';
+let SESSION_ID = 'ceo-session-1';  // replaced by "New chat" so the backend starts a fresh conversation
+let backendOnline = false;
+
+// Maps orchestrator.TOOLS' real tool names (see orchestrator.py) to a
+// friendly status shown while that tool is actually running — driven by
+// the real {"status": "<tool>"} SSE event orchestrator.run_stream emits
+// right before calling it, not a guess based on which shortcut chip was
+// clicked, so it's accurate even when the model picks a different tool
+// than the chip implied. Keep this in sync with orchestrator.TOOLS' names.
+const TOOL_STATUS_LABELS = {
+  read_emails: 'Reading your inbox…',
+  open_outlook: 'Opening Outlook…',
+  resolve_contact: 'Looking up contact…',
+  read_calendar: 'Checking your calendar…',
+  list_files: 'Looking for the file…',
+  read_local_file: 'Reading the file…',
+  get_x_mentions: 'Searching X mentions…',
+  search_flights: 'Searching live fares…',
+  search_hotels: 'Building hotel links…',
+  web_search: 'Searching the web…',
+  web_fetch: 'Reading the page…',
+  search_web: 'Searching the web…',
+  summarize_emails: 'Summarizing your emails…',
+  compose_reply: 'Drafting your reply…',
+};
+
+function setStatus(color, text, hint) {
+  document.getElementById('statusDot').style.background = color;
+  const statusText = document.getElementById('statusText');
+  statusText.textContent = text;
+  statusText.parentElement.title = hint || text;
+}
+
+let statusPollTimer = null;
+
+// /health only proves the backend process is running. "Connected" used to
+// mean just that, so on the boss's PC it showed green while every reply
+// failed (local model not downloaded yet, Claude key out of credit) — the
+// dot now also asks /status whether the SELECTED model can actually answer.
+async function checkBackend(refresh = false) {
+  clearTimeout(statusPollTimer);
+  try {
+    const res = await fetch('http://localhost:8000/health', { signal: AbortSignal.timeout(2000) });
+    backendOnline = res.ok;
+  } catch {
+    backendOnline = false;
+  }
+  if (!backendOnline) {
+    setStatus('var(--danger)', 'Offline demo');
+    // The packaged backend's first cold start can outlast main.js's 15s
+    // wait, so keep checking rather than sit on "Offline demo" until a send.
+    statusPollTimer = setTimeout(() => checkBackend(), 15000);
+    return;
+  }
+  let ready = false;
+  let detail = 'Checking…';
+  let hint = '';
+  try {
+    const res = await fetch(STATUS_URL + (refresh ? '?refresh=true' : ''), { signal: AbortSignal.timeout(12000) });
+    const data = await res.json();
+    ready = data.ready;
+    detail = data.detail;
+    hint = data.hint;
+  } catch {
+    // Leave the "checking" state; the poll below retries.
+  }
+  setStatus(ready ? 'var(--status-ok)' : 'var(--status-warn)', detail, hint);
+  // Keep re-checking while not ready, so e.g. the local model finishing its
+  // first-run download flips the dot green without the user doing anything.
+  if (!ready) statusPollTimer = setTimeout(() => checkBackend(), 15000);
+}
+checkBackend();
+
+// Header model toggle (Claude <-> local Ollama) — added 2026-09-28,
+// rebuilt as a two-button segmented control 2026-09-29 (direct CEO ask,
+// "make the toggle more user-friendly" — a binary choice is clearer as
+// two always-visible buttons than a dropdown that has to be opened first
+// to see what's even in it). Global on the backend
+// (orchestrator._active_provider), not per-session, so this just syncs
+// the active button to whatever's actually active on load and flips it
+// on click; no client-side state to keep consistent beyond that.
+async function initModelToggle() {
+  const pill = document.getElementById('modelPill');
+  const menu = document.getElementById('modelMenu');
+  if (!pill || !menu) return;
+  const label = document.getElementById('modelPillLabel');
+  const options = Array.from(menu.querySelectorAll('.model-opt'));
+  const shortName = (provider) => provider === 'ollama' ? 'Local' : 'Claude';
+  const setActive = (provider) => {
+    for (const o of options) {
+      const on = o.dataset.provider === provider;
+      o.classList.toggle('active', on);
+      o.setAttribute('aria-checked', on ? 'true' : 'false');
+    }
+    label.textContent = shortName(provider);
+  };
+  const activeProvider = () => (options.find(o => o.classList.contains('active')) || options[0]).dataset.provider;
+  const closeMenu = () => { menu.classList.remove('open'); pill.classList.remove('open'); pill.setAttribute('aria-expanded', 'false'); };
+
+  try {
+    const res = await fetch(MODEL_URL, { signal: AbortSignal.timeout(2000) });
+    const data = await res.json();
+    // Show the REAL local model name (e.g. "qwen2.5:3b") from config.OLLAMA_MODEL
+    // so it can never drift out of sync with the backend.
+    if (data.ollama_model) {
+      document.getElementById('localName').textContent = 'Local \u00b7 ' + data.ollama_model;
+    }
+    if (data.provider) setActive(data.provider);
+  } catch {
+    // Backend not up yet - keep the default; checkBackend()'s retry loop
+    // sorts out the real status.
+  }
+
+  pill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = !menu.classList.contains('open');
+    plusMenu.classList.remove('open'); plusBtn.classList.remove('open');
+    menu.classList.toggle('open', open);
+    pill.classList.toggle('open', open);
+    pill.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', (e) => { if (!menu.contains(e.target) && !pill.contains(e.target)) closeMenu(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+
+  for (const opt of options) {
+    opt.addEventListener('click', async () => {
+      closeMenu();
+      if (opt.dataset.provider === activeProvider()) return;
+      setActive(opt.dataset.provider); // optimistic - instant feedback
+      try {
+        await fetch(MODEL_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: opt.dataset.provider })
+        });
+      } catch {
+        // Next chat request just keeps hitting whatever the backend has active.
+      }
+      setStatus('var(--status-warn)', 'Checking…');
+      checkBackend();
+    });
+  }
+}
+initModelToggle();
+
+async function askBackendStream(message, onChunk, onStatus, onInbox) {
+  const res = await fetch(STREAM_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: SESSION_ID, message })
+  });
+  if (!res.ok || !res.body) throw new Error('backend error');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop();  // last part may be incomplete — keep it for the next read
+    for (const part of parts) {
+      if (!part.startsWith('data: ')) continue;
+      const payload = part.slice(6);
+      if (payload === '[DONE]') return;
+      const data = JSON.parse(payload);
+      if (data.error) {
+        // Distinct from a fetch()/network failure below: the backend
+        // definitely responded and started streaming, so this is NOT
+        // "offline" — it's a real error surfaced from inside
+        // orchestrator.run_stream (see main.py's /chat/stream). Tagged so
+        // send()'s catch can show the real message instead of falsely
+        // flipping the status to "Offline demo".
+        const err = new Error(data.error);
+        err.fromBackend = true;
+        throw err;
+      }
+      if (data.inbox) {
+        if (onInbox) onInbox(data.inbox);
+        continue;
+      }
+      if (data.status) {
+        // Real tool name from orchestrator.run_stream, not a guess from
+        // which chip was clicked (see send()'s TOOL_STATUS_LABELS) —
+        // accurate even when the model picks a different tool than the
+        // shortcut implied.
+        onStatus(data.status);
+        continue;
+      }
+      onChunk(data.text);
+    }
+  }
+}
+
+function setGenerating(isGenerating) {
+  // Found 2026-09-24: while a reply was streaming, the shortcut chips and
+  // the "+" attach menu were still clickable, silently queuing up another
+  // request behind the session lock in orchestrator.py with no
+  // indication anything was wrong. Disabling these (and input/send)
+  // fixes that. (A stop button was also added and then removed the same
+  // day — real cancellation of an in-flight response turned out
+  // unreliable enough, and the resulting UX bad enough, that the CEO
+  // asked for it to be pulled entirely; see CLAUDE.md. This chip/input
+  // disabling stands on its own and isn't related to that.)
+  input.disabled = isGenerating;
+  document.querySelectorAll('.chip').forEach(c => { c.disabled = isGenerating; });  // covers both data-q shortcuts and readFileChip
+  plusBtn.disabled = isGenerating;
+  const mp = document.getElementById('modelPill'); if (mp) mp.disabled = isGenerating;
+  sendBtn.disabled = isGenerating;
+}
+
+async function send(v) {
+  addMsg(v, 'user');
+  setGenerating(true);
+  let row = null, b = null, full = '';
+  try {
+    if (!backendOnline) await checkBackend();  // stale offline status shouldn't stick — re-check every send
+    if (backendOnline) {
+      try {
+        row = document.createElement('div');
+        row.className = 'msg assist';
+        b = document.createElement('div');
+        b.className = 'bubble';
+        row.appendChild(b);
+        thread.appendChild(row);
+        thread.scrollTop = thread.scrollHeight;
+        const progress = createProgress(b);
+        progress.start();
+        let showedCards = false;
+        try {
+          await askBackendStream(v, (chunk) => {
+            full += chunk;
+            if (showedCards) return;  // the same summary is already on screen as cards
+            progress.stop();
+            renderMarkdown(b, full);  // replaces the progress steps with the real content on the first chunk
+            thread.scrollTop = thread.scrollHeight;
+          }, (tool) => {
+            progress.step(TOOL_STATUS_LABELS[tool] || 'Working on it…');
+            thread.scrollTop = thread.scrollHeight;
+          }, (inbox) => {
+            progress.stop();
+            showedCards = true;
+            renderInboxCards(b, inbox);
+            thread.scrollTop = Math.max(0, row.offsetTop - 12);  // start of the answer, not the end of a long one
+          });
+        } finally {
+          progress.stop();
+        }
+        if (!full) { row.remove(); return; }  // nothing streamed (e.g. a pure tool-call turn that errored) — no empty bubble
+
+        // If the model proposed booking a flight, sending an email, or
+        // creating a calendar event, it's fenced as one of these blocks
+        // (see orchestrator.py's system prompt) — pull it out of the
+        // visible text and render a real approval card instead. At most
+        // one is expected per reply, but loop so it's not silently missed
+        // if the model ever emits more than one in the same turn.
+        const PROPOSAL_BLOCKS = [
+          { tag: 'agmc-booking', render: addBookingApproval },
+          { tag: 'agmc-send-email', render: addSendEmailApproval },
+          { tag: 'agmc-reply-email', render: addReplyEmailApproval },
+          { tag: 'agmc-calendar-event', render: addCalendarApproval },
+        ];
+        let cleaned = full;
+        for (const { tag, render } of PROPOSAL_BLOCKS) {
+          const match = cleaned.match(new RegExp('```' + tag + '\\s*([\\s\\S]*?)```'));
+          if (!match) continue;
+          cleaned = (cleaned.slice(0, match.index) + cleaned.slice(match.index + match[0].length)).trim();
+          try {
+            render(JSON.parse(match[1]));
+          } catch {
+            // malformed block from the model — leave the text as-is, no card
+          }
+        }
+        if (cleaned !== full) {
+          renderMarkdown(b, cleaned);
+          thread.scrollTop = thread.scrollHeight;
+        }
+        // A reply that finished while the panel was already closed (the
+        // CEO asked something, then closed the chat before it finished
+        // streaming) is the one real "you missed something" case this app
+        // can actually produce — surface it instead of silently discarding
+        // the answer. Cleared again the moment the panel is reopened (see
+        // mascotBtn's click handler).
+        attachCopy(row);
+        if (!palette.classList.contains('open')) { badge.style.display = 'block'; }
+        if (document.getElementById('statusText').textContent !== 'Connected') checkBackend();
+        return;
+      } catch (e) {
+        if (e && e.fromBackend) {
+          // The backend definitely responded and started streaming (see
+          // askBackendStream) — this is a real error from
+          // orchestrator.run_stream, e.g. the Anthropic API itself
+          // rejecting the request, not a connectivity problem. Show it
+          // plainly instead of flipping to "Offline demo", which used to
+          // hide genuine backend errors behind a misleading status.
+          if (b) renderMarkdown(b, `⚠️ ${e.message}`);
+          checkBackend(true);  // bypass the cached Claude check — this failure is fresh evidence
+          return;
+        }
+        if (row) row.remove();  // drop the stuck "..." loading bubble before falling back to the demo reply
+        backendOnline = false;
+        setStatus('var(--danger)', 'Offline demo');
+      }
+    }
+    setTimeout(() => respond(v), 380);
+  } finally {
+    setGenerating(false);
+    input.focus();
+  }
+}
+
+function submit() {
+  const v = input.value.trim();
+  if (!v) return;
+  input.value = '';
+  send(v);
+}
+
+sendBtn.onclick = submit;
+input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+document.querySelectorAll('.chip[data-q]').forEach(c => c.addEventListener('click', () => send(c.dataset.q)));
+// Chips that need details from the CEO (who / where / when) only START the
+// request: they pre-fill the input and wait, instead of sending made-up specifics.
+document.querySelectorAll('.chip[data-fill]').forEach(c => c.addEventListener('click', () => {
+  input.value = c.dataset.fill;
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+}));
+
+// --- File upload ---
+const fileInput = document.getElementById('fileInput');
+document.getElementById('readFileChip').addEventListener('click', () => fileInput.click());
+document.getElementById('plusFileItem').addEventListener('click', () => {
+  plusMenu.classList.remove('open');
+  plusBtn.classList.remove('open');
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', async () => {
+  const file = fileInput.files[0];
+  fileInput.value = '';  // reset so picking the same file twice still fires 'change'
+  if (!file) return;
+
+  addMsg(`📎 ${file.name}`, 'user');
+
+  if (!backendOnline) await checkBackend();
+  if (!backendOnline) {
+    addMsg("The backend isn't running, so I can't read files right now — start uvicorn and try again.", 'assist');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('session_id', SESSION_ID);
+  formData.append('file', file);
+
+  try {
+    const res = await fetch(UPLOAD_URL, { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.ok) {
+      const note = data.truncated ? ' (it was long, so I only kept the first part)' : '';
+      addMsg(`Read **${data.filename}**${note}. Ask me anything about it.`, 'assist');
+    } else {
+      addMsg(`Couldn't read ${file.name}: ${data.error}`, 'assist');
+    }
+  } catch {
+    addMsg('Upload failed — check that the backend is running.', 'assist');
+  }
+});
+</script>
+</body>
+</html>

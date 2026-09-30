@@ -1,0 +1,47 @@
+AGMC X — Setup & Testing Notes
+================================
+
+You should have two files:
+
+1. AGMC X 1.0.0.exe
+   The app itself. No installs needed — just double-click it.
+   - A small round bubble appears in the bottom-right corner of your screen.
+   - Click it to open the chat panel; click the X to shrink it back to a
+     bubble (it stays running in the background — to fully quit, right-click
+     the tray icon near your clock and choose "Quit").
+
+2. setup_local_model.ps1
+   Only needed if you also want to try the "Local" model option (a version
+   that runs fully on your own PC instead of in the cloud — useful if you
+   ever want to test with nothing leaving the machine). Skip this file
+   entirely if you only want to test the normal (Claude/cloud) mode.
+
+How to start testing
+---------------------
+1. Double-click AGMC X 1.0.0.exe. Give it 10-15 seconds on first launch.
+2. Click the bubble to open the chat and start asking it things.
+3. At the top of the chat panel there's a two-button switch: "Claude" and
+   the local model's name. Claude is the default and what most testing
+   should use.
+
+If you want to try the Local option too
+----------------------------------------
+1. Right-click setup_local_model.ps1 -> Run with PowerShell.
+   (If Windows blocks it, right-click -> Properties -> check "Unblock" ->
+   OK, then try again.)
+2. Let it finish — it downloads a small AI model (~2GB), so it can take a
+   few minutes depending on your connection.
+3. Open (or re-open) AGMC X, click the toggle to switch to the local model
+   name, and test the same way.
+
+Using your own API key (optional)
+----------------------------------
+There's a small gear icon in the app's header. If you have your own
+Anthropic API key, click it and paste it in there — no reinstall needed,
+it takes effect immediately.
+
+If something doesn't respond
+------------------------------
+If the Claude side stops replying or shows an error, it's most likely a
+billing/credit issue on the API key side, not a problem with the app
+itself — let me know and I'll check.

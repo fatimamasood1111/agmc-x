@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "agmc-backend",
+      "runtimeExecutable": "backend/venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "main:app", "--port", "8000", "--app-dir", "backend"],
+      "port": 8000
+    },
+    {
+      "name": "agmc-frontend",
+      "runtimeExecutable": "backend/venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "http.server", "8002", "--directory", "frontend", "--bind", "127.0.0.1"],
+      "port": 8002
+    }
+  ]
+}

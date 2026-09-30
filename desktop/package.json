@@ -1,0 +1,47 @@
+{
+  "name": "agmc-assist-desktop",
+  "version": "1.0.0",
+  "description": "AGMC Assist desktop widget — a floating chat bubble that expands into the chat panel.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.agmc.assist",
+    "productName": "AGMC X",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "../frontend", "to": "frontend" },
+      { "from": "../icon.ico", "to": "icon.ico" },
+      { "from": "../backend/dist/agmc-backend", "to": "backend-dist" },
+      { "from": "../.tools/searxng/dist/searxng", "to": "searxng-dist" }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "../icon.ico",
+      "signAndEditExecutable": false
+    },
+    "afterPack": "afterPack.js",
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
+    }
+  }
+}

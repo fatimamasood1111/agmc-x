@@ -1,0 +1,48 @@
+# Secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+backend/mcp_servers/.outlook_token_cache.json
+**/.outlook_token_cache.json
+*.pem
+*.pfx
+*.key
+
+# Python
+__pycache__/
+*.pyc
+backend/venv/
+backend/build/
+backend/dist/
+backend/*.spec.bak
+
+# Node / Electron
+.tools/
+desktop/node_modules/
+desktop/dist/
+desktop/out/
+desktop/release/
+
+# Built installers / archives (large, regeneratable, contain the embedded .env)
+*.exe
+*.zip
+*.blockmap
+
+# Logs and local test output
+*.log
+local-model-setup.log
+
+# Claude Code local state (personal permissions/settings)
+.claude/settings.local.json
+
+# Editor/OS cruft
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+.claude/scheduled_tasks.lock
+icon.ico.bak
+backend/com-smoke-test.spec
