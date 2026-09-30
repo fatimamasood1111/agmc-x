@@ -2810,3 +2810,44 @@ win here — expect to still need a clean date from the CEO sometimes.
   All backend Claude code and the picker markup/JS are untouched — set
   `LOCAL_ONLY = false` to bring the picker back. The backend's own default
   provider is still `anthropic` until a page connects. Not rebuilt into the installer.
+
+### Scheduling a meeting under the local model — FIXED the same way (2026-09-30)
+
+CEO report: "Schedule a meeting with fatima.masood@agmc.com for tomorrow at 3pm
+for 1 hr called test" -> the local model said the calendar was full, proposed
+Friday 10:00 instead of the time asked, said "confirmed" with NO approval card,
+looped on every "yes", and wrote "Fatima Masood @agmc.com". Same cause as the
+inbox/reply failures (a 3B model can't do the bookkeeping), same fix: code does
+it, the model is not called at all.
+
+- `backend/scheduling.py` (pure, unit-testable with a fixed "today"): intent
+  (`is_schedule_request`: schedule/set up/book... + meeting/call/..., excludes
+  flights/hotels/reply/cancel/reschedule/"what's my schedule"), and parsing of
+  attendee addresses/names, day (today/tomorrow/weekday/"next fri"/15 october/
+  ISO/dd-mm), time ("3pm", "10:00am", "14:30", "noon", "from 2 to 3pm"), length
+  ("for 1 hr", "45 minutes", "half an hour"; default 30 min, said in the reply)
+  and title ("called/titled/about X", quoted text). A bare "at 3" is ASKED
+  ("AM or PM?"), never guessed. Weekday rule: "on friday" said on a Friday means
+  next week's; "next friday" = the one in next calendar week.
+- `orchestrator._schedule_events` (first handler in `_ollama_events`, before
+  `_reply_events`): names are resolved with `resolve_contact` and the resolved
+  "Name (address)" is shown; an unresolvable name ASKS for an address; missing
+  who/day/time is asked (one pending question, kept in `_pending_schedule`,
+  consumed by the next message — only accepted if it fills something that was
+  missing, so an unrelated question containing "today" isn't hijacked); a time in
+  the past asks for another day; overlaps on the real calendar are a "Heads-up"
+  line, never a refusal (all-day banners ignored); "just me" makes a personal
+  block; "the meeting ... instead" inherits the last meeting's attendees/title.
+  Emits the usual `agmc-calendar-event` block, built with `json.dumps`, times in
+  Gulf time with no offset. Status events: resolve_contact, read_calendar.
+- **Typed "yes" never goes to the model any more**: after any reply or meeting
+  proposal, `_awaiting_confirm` makes a bare yes/ok/confirm answer with "use the
+  button on the card" (the model used to claim it had confirmed). Cleared by any
+  other message.
+- The local-model "still setting up" message no longer says "switch to Claude"
+  (Claude is hidden in the UI).
+- Verified: 50+ parser cases, an end-to-end conversation test with faked Outlook
+  (the CEO's exact transcript, follow-ups, ambiguity, past time, unrelated
+  messages, flights still reaching the model), and the real backend on a
+  throwaway port with the real Outlook (read-only; nothing was booked).
+- **NOT rebuilt into the installer / not pushed to GitHub.**

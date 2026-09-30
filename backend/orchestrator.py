@@ -23,6 +23,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import anthropic
 import llm_providers
+import scheduling
 import mcp_outlook_client  # noqa: F401 — kept imported, not currently called; see _read_emails below
 from config import config
 from tools import email_tool, calendar_tool, social_tool, file_tool, flight_tool, hotel_tool, outlook_com_tool, web_search_tool
@@ -1579,31 +1580,187 @@ def _reply_events(session_id: str, user_message: str):
     block = json.dumps({"entry_id": entry_id, "body": body.replace("```", ""), "reply_all": bool(_REPLY_ALL_RE.search(instruction))}, ensure_ascii=False)
     subject = message["subject"].replace('"', "'")
     where = f" ({note})" if note else ""
+    _awaiting_confirm[session_id] = True
     yield {"type": "text", "text": (
         f"Here's a draft reply to **{group['from_name']}** — \"{subject}\"{where}. "
         f"Nothing is sent until you confirm.\n\n```agmc-reply-email\n{block}\n```")}
 
 
+# --- Scheduling a meeting under the local model (2026-09-30) ---------------
+# CEO report: "schedule a meeting ... tomorrow at 3pm for 1 hr called test" made
+# the local model claim the calendar was full, propose a different time, say
+# "confirmed" with no approval card, loop on "yes" and mangle the address.
+# scheduling.py parses date/time/length/title/attendees deterministically; this
+# glue asks for anything missing (never guesses), resolves names to real
+# addresses, checks the calendar for overlaps (a warning, never a refusal) and
+# emits the approval card. The model is not called at all.
+_pending_schedule: dict[str, "scheduling.Slots"] = {}
+_last_schedule: dict[str, "scheduling.Slots"] = {}
+_awaiting_confirm: dict[str, bool] = {}
+_SAME_MEETING_RE = re.compile(r"\b(the|that|this|same)\s+(meeting|call|appointment|event)\b|\bsame\b|\binstead\b", re.I)
+_YES_RE = re.compile(r"\W*(yes|yep|yeah|yup|ok|okay|sure|confirm(?:ed)?|go ahead|do it|send it|proceed|please do|book it)\W*", re.I)
+_CONFIRM_NUDGE = (
+    "Nothing has been done yet — I can't confirm it for you. Use the button on the card above "
+    "(or Cancel). If you want something changed, tell me what."
+)
+
+
+def _fmt_clock(t) -> str:
+    return t.strftime("%I:%M %p").lstrip("0")
+
+
+def _fmt_length(minutes: int) -> str:
+    h, m = divmod(minutes, 60)
+    parts = ([f"{h} hour" + ("s" if h != 1 else "")] if h else []) + ([f"{m} minutes"] if m else [])
+    return " ".join(parts)
+
+
+def _person_from_email(address: str) -> str:
+    return " ".join(w.capitalize() for w in re.split(r"[._-]+", address.split("@")[0]) if w)
+
+
+def _calendar_conflicts(start_dt: datetime, end_dt: datetime) -> list[tuple]:
+    try:
+        days = max(2, min(60, (start_dt.date() - datetime.now(_GST).date()).days + 2))
+        result = TOOL_DISPATCH["read_calendar"]({"days_ahead": days})
+    except Exception:
+        return []
+    if result.get("mock"):
+        return []
+    found = []
+    for e in result.get("events", []):
+        try:
+            s = datetime.fromisoformat(e["start"]).astimezone(_GST).replace(tzinfo=None)
+            en = datetime.fromisoformat(e["end"]).astimezone(_GST).replace(tzinfo=None)
+        except (KeyError, ValueError, TypeError):
+            continue
+        if en - s >= timedelta(hours=20):  # all-day banners aren't a conflict
+            continue
+        if s < end_dt and en > start_dt:
+            found.append((s, en, e.get("subject") or "(no title)"))
+    return found[:3]
+
+
+def _schedule_events(session_id: str, user_message: str):
+    pending = _pending_schedule.pop(session_id, None)
+    today = datetime.now(_GST).date()
+    is_req = scheduling.is_schedule_request(user_message)
+    if is_req:
+        slots = scheduling.parse(user_message, today)
+        last = _last_schedule.get(session_id)
+        if last and not (slots.emails or slots.names or slots.solo) and _SAME_MEETING_RE.search(user_message):
+            slots.emails, slots.names, slots.labels = list(last.emails), list(last.names), dict(last.labels)
+            slots.title = slots.title or last.title
+    elif pending:
+        new = scheduling.parse(user_message, today)
+        if pending.ambiguous_hour and not new.start:
+            new.start = scheduling.apply_meridiem(pending.ambiguous_hour, user_message)
+        needs_who = not (pending.emails or pending.names or pending.solo)
+        words = user_message.split()
+        if needs_who and not new.has_anything() and 0 < len(words) <= 4 and not re.search(r"\d", user_message):
+            new.names = [user_message.strip(" .!?")]  # a bare name in answer to "who?"
+        if not scheduling.fills_missing(pending, new) or len(words) > 12:
+            return  # not an answer to our question: drop it and treat as a fresh message
+        slots = scheduling.merge(pending, new)
+    else:
+        return
+
+    # Attendees: addresses given directly are used as-is; names are resolved
+    # through Outlook and the resolved name+address is shown, never assumed.
+    unresolved = []
+    if slots.names:
+        yield {"type": "status", "tool": "resolve_contact"}
+        for name in slots.names:
+            try:
+                r = TOOL_DISPATCH["resolve_contact"]({"name": name})
+            except Exception:
+                r = {}
+            addr = (r.get("email") or "").strip().lower()
+            if r.get("resolved") and "@" in addr and not addr.startswith("/o="):
+                slots.labels[addr] = f"{r.get('name') or name} ({addr})"
+                if addr not in slots.emails:
+                    slots.emails.append(addr)
+            else:
+                unresolved.append(name)
+        slots.names = []
+
+    asks = []
+    if unresolved:
+        asks.append(f"I couldn't find an email address for {', '.join(unresolved)} — what is their email address?")
+    elif not (slots.emails or slots.solo):
+        asks.append("Who should I invite? Give me a name or email address (or say “just me” for a personal calendar block).")
+    if not slots.day:
+        asks.append("Which day?")
+    if slots.ambiguous_hour and not slots.start:
+        asks.append(f"Is {slots.ambiguous_hour} AM or PM?")
+    elif not slots.start:
+        asks.append("What time should it start?")
+    start_dt = end_dt = None
+    if not asks:
+        start_dt = datetime.combine(slots.day, slots.start)
+        end_dt = datetime.combine(slots.day, slots.end) if slots.end else start_dt + timedelta(minutes=slots.minutes or 30)
+        if start_dt <= datetime.now(_GST).replace(tzinfo=None):
+            slots.day = None
+            asks.append("That time has already passed — which day should I use?")
+    if asks:
+        _pending_schedule[session_id] = slots
+        text = asks[0] if len(asks) == 1 else "To set that up I still need:\n" + "\n".join(f"- {a}" for a in asks)
+        yield {"type": "text", "text": text}
+        return
+
+    yield {"type": "status", "tool": "read_calendar"}
+    conflicts = _calendar_conflicts(start_dt, end_dt)
+    who = [slots.labels.get(e, e) for e in slots.emails]
+    subject = slots.title or (f"Meeting with {_person_from_email(slots.emails[0])}" if slots.emails else "Calendar block")
+    length = (end_dt - start_dt).seconds // 60
+    d = start_dt.date()
+    lines = [
+        "Here's the meeting, ready for you to confirm:",
+        "",
+        f"**{subject}** — {d:%A} {d.day} {d:%B %Y}, {_fmt_clock(start_dt)}–{_fmt_clock(end_dt)} ({_fmt_length(length)})",
+        ("With: " + ", ".join(who)) if who else "Just you (no invitees)",
+    ]
+    if not slots.minutes and not slots.end:
+        lines.append("Length: 30 minutes by default — tell me if you want a different one.")
+    for s, en, subj in conflicts:
+        lines.append(f"Heads-up: you already have “{subj}” from {_fmt_clock(s)} to {_fmt_clock(en)} then.")
+    lines.append("Nothing is booked and no invite is sent until you click **Book meeting**.")
+    block = json.dumps({
+        "subject": subject.replace("```", ""),
+        "start": start_dt.strftime("%Y-%m-%dT%H:%M:%S"),
+        "end": end_dt.strftime("%Y-%m-%dT%H:%M:%S"),
+        "attendees": slots.emails,
+    }, ensure_ascii=False)
+    _last_schedule[session_id] = slots
+    _awaiting_confirm[session_id] = True
+    yield {"type": "text", "text": "\n".join(lines) + f"\n\n```agmc-calendar-event\n{block}\n```"}
+
+
 def _ollama_events(session_id: str, user_message: str, messages: list[dict], scoped_tools: list[dict]):
+    if _awaiting_confirm.pop(session_id, False) and _YES_RE.fullmatch(user_message.strip()):
+        _awaiting_confirm[session_id] = True  # still waiting for the real click
+        yield {"type": "text", "text": _CONFIRM_NUDGE}
+        return
     if _is_inbox_summary_request(user_message):
         _pending_reply.pop(session_id, None)  # a new topic drops any open "which email?" question
-        handler = _inbox_summary_events(session_id)
+        _pending_schedule.pop(session_id, None)
+        handlers = [lambda: _inbox_summary_events(session_id)]
     else:
-        handler = _reply_events(session_id, user_message)
-    answered = False
-    for event in handler:
-        answered = answered or event["type"] == "text"
-        yield event
-    if answered:
-        return
+        handlers = [lambda: _schedule_events(session_id, user_message), lambda: _reply_events(session_id, user_message)]
+    for make in handlers:
+        answered = False
+        for event in make():
+            answered = answered or event["type"] == "text"
+            yield event
+        if answered:
+            return
     yield from _ollama_turns(session_id, messages, scoped_tools)
 
 
 _LOCAL_MODEL_SETTING_UP = (
     "The local model is still setting up on this computer — it downloads "
     "automatically the first time the app runs, which can take a few "
-    "minutes. Please try again shortly, or switch to Claude in the "
-    "meantime."
+    "minutes. Please try again in a few minutes."
 )
 
 
